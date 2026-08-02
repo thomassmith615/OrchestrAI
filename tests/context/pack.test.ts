@@ -18,7 +18,13 @@ const TOOLCHAIN: Toolchain = {
 
 function pack(
   files: Record<string, string>,
-  options: { budget?: number; focus?: string[]; recent?: string[]; headroom?: number } = {},
+  options: {
+    budget?: number;
+    focus?: string[];
+    recent?: string[];
+    headroom?: number;
+    notes?: { title: string; body: string }[];
+  } = {},
 ): PackedContext {
   const fs = fakeFileSystem(files);
 
@@ -31,6 +37,7 @@ function pack(
     ...(options.focus === undefined ? {} : { focus: options.focus }),
     ...(options.recent === undefined ? {} : { recent: options.recent }),
     ...(options.headroom === undefined ? {} : { headroom: options.headroom }),
+    ...(options.notes === undefined ? {} : { notes: options.notes }),
   });
 }
 
@@ -154,6 +161,63 @@ describe("packContext", () => {
     const files = { "/repo/a.ts": "one", "/repo/b.ts": "two" };
 
     expect(pack(files).text).toEqual(pack(files).text);
+  });
+});
+
+describe("recalled notes", () => {
+  it("renders notes into the context and counts their tokens", () => {
+    const packed = pack(
+      { "/repo/src/a.ts": "export const a = 1;" },
+      {
+        notes: [
+          { title: "decision: Providers call REST", body: "Testability wins." },
+        ],
+      },
+    );
+
+    expect(packed.text).toContain("# Project memory");
+    expect(packed.text).toContain("## decision: Providers call REST");
+    expect(packed.text).toContain("Testability wins.");
+    expect(packed.notes).toBe(1);
+    expect(packed.noteTokens).toBeGreaterThan(0);
+  });
+
+  it("places memory before the files", () => {
+    const packed = pack(
+      { "/repo/src/a.ts": "export const a = 1;" },
+      { notes: [{ title: "n", body: "body" }] },
+    );
+
+    expect(packed.text.indexOf("# Project memory")).toBeLessThan(
+      packed.text.indexOf("--- src/a.ts ---"),
+    );
+  });
+
+  it("counts note tokens against the same budget as files", () => {
+    const withNotes = pack(
+      { "/repo/a.ts": "x".repeat(2000), "/repo/b.ts": "y".repeat(2000) },
+      { budget: 2000, notes: [{ title: "n", body: "z".repeat(400) }] },
+    );
+
+    expect(withNotes.tokens).toBeLessThanOrEqual(withNotes.usable);
+  });
+
+  it("drops memory entirely rather than crowding out the code", () => {
+    const packed = pack(
+      { "/repo/a.ts": "x" },
+      { budget: 1000, notes: [{ title: "huge", body: "z".repeat(20_000) }] },
+    );
+
+    expect(packed.notes).toBe(0);
+    expect(packed.noteTokens).toBe(0);
+    expect(packed.text).not.toContain("# Project memory");
+  });
+
+  it("reports zero notes when none were supplied", () => {
+    const packed = pack({ "/repo/a.ts": "x" });
+
+    expect(packed.notes).toBe(0);
+    expect(packed.text).not.toContain("# Project memory");
   });
 });
 

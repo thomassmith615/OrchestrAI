@@ -52,7 +52,7 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch roadmap` | Display the roadmap and milestone progression | M8, available |
 | `orch milestone` | Execute the current milestone workflow | M8, available |
 | `orch next` | Determine the next milestone and prepare the workflow | M9 |
-| `orch memory` | Inspect project memory | M10, available |
+| `orch memory` | Inspect project memory; `verify` and `compact` sub-commands | M10, M11, available |
 | `orch history` | Display engineering history and completed milestones | M10, available |
 | `orch plugins` | Manage Orchestraᵢ plugins | M12 |
 | `orch dashboard` | Launch the optional local web dashboard | M12 |
@@ -235,6 +235,8 @@ orch memory                       # most recent records
 orch memory "truncation budget"   # ranked search, with the reasons
 orch memory --kind constraint     # filter
 orch memory --full                # include bodies
+orch memory verify                # damaged or duplicated records; exits 1 if any
+orch memory compact               # repair, archiving the previous file first
 orch history                      # completed milestones and the run log
 ```
 
@@ -247,6 +249,32 @@ the files and capped at a third of the window. `orch context` shows what
 reached the model.
 
 `orch history` is the log of what was done; `orch memory` is the record of why.
+
+## Resilience and spend
+
+Rate limits, server errors, and transport failures are retried with exponential
+backoff and full jitter, honouring `Retry-After`. Bad credentials and malformed
+requests are never retried.
+
+```bash
+orch config      # maxRetries, requestTimeout, fallbackProvider, baseUrl
+orch history     # calls, tokens, and estimated spend
+```
+
+`fallbackProvider` is used only when the primary fails with a retryable error,
+after its own retries are spent.
+
+Every call is ledgered to `.orchestrai/usage.jsonl`. Cost is an estimate from an
+advisory rate table: a model with no known rate reports no cost rather than a
+wrong one, and totals say how many calls were unpriced.
+
+`baseUrl` points the OpenAI-compatible provider at any endpoint speaking the
+chat completions format, including local runtimes:
+
+```bash
+orch provider add openai --model llama-3.1-70b
+orch config --set baseUrl=http://localhost:11434/v1
+```
 
 ## Preconditions
 

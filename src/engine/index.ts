@@ -9,7 +9,14 @@ import { buildCommand, testCommand } from "./commands/gates.js";
 import { configCommand } from "./commands/config.js";
 import { contextCommand } from "./commands/context.js";
 import { doctorCommand } from "./commands/doctor.js";
+import { historyCommand } from "./commands/history.js";
 import { infoCommand } from "./commands/info.js";
+import {
+  memoryAddCommand,
+  memoryCommand,
+  memoryCompactCommand,
+  memoryVerifyCommand,
+} from "./commands/memory.js";
 import { milestoneCommand } from "./commands/milestone.js";
 import { nextCommand } from "./commands/next.js";
 import { roadmapCommand } from "./commands/roadmap.js";
@@ -33,7 +40,12 @@ export function createRegistry(): CommandRegistry {
   registry.register(configCommand);
   registry.register(contextCommand);
   registry.register(doctorCommand);
+  registry.register(historyCommand);
   registry.register(infoCommand);
+  registry.register(memoryCommand);
+  registry.register(memoryAddCommand);
+  registry.register(memoryCompactCommand);
+  registry.register(memoryVerifyCommand);
   registry.register(initCommand);
   registry.register(milestoneCommand);
   registry.register(nextCommand);

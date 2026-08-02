@@ -7,7 +7,8 @@
  */
 import { packContext, recentlyChanged } from "../context/index.js";
 import { detectToolchain, scanRepository } from "../repo/index.js";
-import { createProvider } from "../providers/index.js";
+import { createProvider, estimateCost, isRetryable, withRetry } from "../providers/index.js";
+import { defaultRetriever, readMemory, recordUsage } from "../memory/index.js";
 import { findPrompt, promptRef, renderPrompt } from "../prompts/index.js";
 import { requireConfig, requireWorkspace } from "./command.js";
 import type { PackedContext } from "../context/index.js";
@@ -26,6 +27,13 @@ export interface AiRequest {
 export interface AiOutcome {
   readonly result: CompletionResult;
   readonly packed: PackedContext;
+  /** Ids of the memory records recalled into the context. */
+  readonly recalled: readonly string[];
+  readonly retries: number;
+  /** True when the primary provider failed and the fallback answered. */
+  readonly fellBack: boolean;
+  /** Null when the model has no known rate. */
+  readonly costUsd: number | null;
   /** e.g. `review@1`, recorded so a run can name what produced it. */
   readonly promptRef: string;
   readonly systemRef: string;
@@ -77,6 +85,25 @@ export async function completeWithContext(
   });
   const toolchain = detectToolchain(context.hosts.fs, workspace.root);
 
+  // Recall runs before packing so that what memory contributes is budgeted
+  // alongside the files rather than appended after the fact.
+  const query = [
+    request.variables?.["task"] ?? "",
+    request.variables?.["objective"] ?? "",
+    ...(request.focus ?? []),
+  ]
+    .join(" ")
+    .trim();
+
+  const recalled =
+    query.length === 0
+      ? []
+      : defaultRetriever.search(
+          query,
+          readMemory(context.hosts.fs, workspace.stateDir).records,
+          { limit: 5, now: context.hosts.clock.now() },
+        );
+
   const packed = packContext({
     root: workspace.root,
     fs: context.hosts.fs,
@@ -85,6 +112,10 @@ export async function completeWithContext(
     budget: config.values.contextBudget,
     ...(request.focus === undefined ? {} : { focus: request.focus }),
     recent: recentlyChanged(context.hosts.proc, workspace.root),
+    notes: recalled.map((entry) => ({
+      title: `${entry.record.kind}: ${entry.record.title}`,
+      body: entry.record.body,
+    })),
   });
 
   const system = renderPrompt("system", {
@@ -97,29 +128,93 @@ export async function completeWithContext(
     ...request.variables,
   });
 
-  const provider = createProvider(config.values.provider, {
+  const completion = {
+    system,
+    messages: [{ role: "user" as const, content: user }],
+    maxTokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+  };
+
+  const providerOptions = {
     env: context.hosts.env,
     http: context.hosts.http,
     model: config.values.model,
-  });
+    baseUrl: config.values.baseUrl,
+    timeoutMs: config.values.requestTimeout * 1000,
+  };
 
   context.logger.debug(
-    `${provider.id}: ${String(packed.tokens)} context tokens, prompt ${request.promptId}`,
+    `${config.values.provider}: ${String(packed.tokens)} context tokens, prompt ${request.promptId}`,
   );
 
-  const result = await provider.complete({
-    system,
-    messages: [{ role: "user", content: user }],
-    maxTokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
-  });
+  let retries = 0;
+  let fellBack = false;
+
+  const call = async (id: string): Promise<CompletionResult> =>
+    withRetry(
+      () => createProvider(id, providerOptions).complete(completion),
+      {
+        policy: {
+          maxRetries: config.values.maxRetries,
+          baseDelayMs: 500,
+          maxDelayMs: 30_000,
+        },
+        onRetry: (attempt) => {
+          retries += 1;
+          context.logger.warn(
+            `${id} ${attempt.error.kind}, retry ${String(attempt.attempt)} in ${String(attempt.delayMs)}ms`,
+          );
+        },
+      },
+    );
+
+  let result: CompletionResult;
+
+  try {
+    result = await call(config.values.provider);
+  } catch (error: unknown) {
+    const fallback = config.values.fallbackProvider;
+
+    // Failover only for failures a different provider could plausibly survive.
+    // A malformed request will fail identically everywhere.
+    if (fallback === null || fallback === config.values.provider || !isRetryable(error)) {
+      throw error;
+    }
+
+    context.logger.warn(
+      `${config.values.provider} unavailable, falling back to ${fallback}`,
+    );
+    fellBack = true;
+    result = await call(fallback);
+  }
+
+  const costUsd = estimateCost(result.model, result.usage);
 
   const prompt = findPrompt(request.promptId);
   const systemPrompt = findPrompt("system");
+  const reference = prompt === undefined ? request.promptId : promptRef(prompt);
+
+  // Every call is ledgered, including ones that failed over or retried, so the
+  // record reflects what was actually spent rather than what was intended.
+  recordUsage(context.hosts.fs, workspace.stateDir, {
+    at: context.hosts.clock.now(),
+    provider: result.provider,
+    model: result.model,
+    promptRef: reference,
+    inputTokens: result.usage.inputTokens,
+    outputTokens: result.usage.outputTokens,
+    costUsd,
+    retries,
+    fellBack,
+  });
 
   return {
     result,
     packed,
-    promptRef: prompt === undefined ? request.promptId : promptRef(prompt),
+    recalled: recalled.map((entry) => entry.record.id),
+    retries,
+    fellBack,
+    costUsd,
+    promptRef: reference,
     systemRef: systemPrompt === undefined ? "system" : promptRef(systemPrompt),
   };
 }

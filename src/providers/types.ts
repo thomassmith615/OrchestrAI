@@ -77,6 +77,10 @@ export interface ProviderOptions {
   readonly http: HttpHost;
   /** Model from configuration, or null to use the provider default. */
   readonly model: string | null;
+  /** Endpoint override, for compatible or self hosted deployments. */
+  readonly baseUrl?: string | null;
+  /** Per-request deadline in milliseconds. */
+  readonly timeoutMs?: number;
 }
 
 /** Metadata available without constructing a provider. */
@@ -102,12 +106,19 @@ export class ProviderError extends OrchestraiError {
   readonly kind: ProviderErrorKind;
   readonly provider: string;
   readonly status: number | undefined;
+  /** Honoured by the retry policy when the service supplied one. */
+  readonly retryAfterMs: number | undefined;
 
   constructor(
     provider: string,
     kind: ProviderErrorKind,
     message: string,
-    options: { status?: number; hint?: string; cause?: unknown } = {},
+    options: {
+      status?: number;
+      hint?: string;
+      cause?: unknown;
+      retryAfterMs?: number;
+    } = {},
   ) {
     super(message, {
       code: `provider.${kind}`,
@@ -119,6 +130,7 @@ export class ProviderError extends OrchestraiError {
     this.kind = kind;
     this.provider = provider;
     this.status = options.status;
+    this.retryAfterMs = options.retryAfterMs;
   }
 }
 

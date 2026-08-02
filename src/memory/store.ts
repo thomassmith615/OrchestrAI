@@ -112,6 +112,67 @@ export function appendMemory(
   fs.writeFile(path, `${existing}${separator}${JSON.stringify(record)}\n`);
 }
 
+export interface CompactionResult {
+  readonly before: number;
+  readonly after: number;
+  readonly removedDamaged: number;
+  readonly removedDuplicate: number;
+  readonly archivedTo: string;
+}
+
+/**
+ * Rewrites the ledger, dropping damaged lines and duplicate ids.
+ *
+ * This is the one operation that is not append-only, so it is never automatic:
+ * a human asks for it, the previous file is archived beside the new one, and
+ * the counts are reported. An unattended process that rewrites the record of
+ * decisions is exactly what append-only exists to prevent.
+ */
+export function compactMemory(
+  fs: FileSystemHost,
+  stateDir: string,
+  now: number,
+): CompactionResult {
+  const path = memoryPath(stateDir);
+  const raw = fs.exists(path) ? fs.readFile(path) : "";
+  const lines = raw.split("\n").filter((line) => line.trim().length > 0);
+
+  const { records, damaged } = readMemory(fs, stateDir);
+
+  const kept = new Map<string, MemoryRecord>();
+  let removedDuplicate = 0;
+
+  for (const record of records) {
+    if (kept.has(record.id)) {
+      removedDuplicate += 1;
+    }
+    // Later wins: a re-written id is a correction.
+    kept.set(record.id, record);
+  }
+
+  const stamp = new Date(now).toISOString().replace(/[-:T.]/g, "").slice(0, 14);
+  const archivedTo = join(memoryDir(stateDir), `records.${stamp}.jsonl`);
+
+  if (raw.length > 0) {
+    fs.writeFile(archivedTo, raw);
+  }
+
+  const ordered = [...kept.values()].sort((a, b) => a.createdAt - b.createdAt);
+  fs.writeFile(
+    path,
+    ordered.map((record) => JSON.stringify(record)).join("\n") +
+      (ordered.length > 0 ? "\n" : ""),
+  );
+
+  return {
+    before: lines.length,
+    after: ordered.length,
+    removedDamaged: damaged.length,
+    removedDuplicate,
+    archivedTo,
+  };
+}
+
 /** Short, sortable, and unique within a millisecond. */
 export function nextMemoryId(
   now: number,

@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 8 complete. Next up: Milestone 9.
+**Current position:** Milestone 11 complete. Next up: Milestone 12.
 
 ---
 
@@ -85,7 +85,7 @@ milestone, and implement the next unchecked one.
   charter's nine step development process expressed as executable stages.
   Delivers `orch roadmap`, `orch milestone`.
 
-- [ ] **M9. `orch next`**
+- [x] **M9. `orch next`**
   End to end orchestration: analyze, recall, plan, propose, verify, summarize,
   record. Every prior milestone is a component of this one command. When this
   works, the platform is what the charter describes. Delivers `orch next`.
@@ -99,7 +99,7 @@ milestone, and implement the next unchecked one.
   based first with an optional embedding backend behind the same interface,
   feeding the context packer from M6. Delivers `orch memory`, `orch history`.
 
-- [ ] **M11. Hardening**
+- [x] **M11. Hardening**
   Timeouts, retry with exponential backoff and jitter, rate limit handling, per
   request token and cost accounting, provider failover. An OpenAI compatible
   provider covering OpenAI and any base URL compatible endpoint, which is how
@@ -145,3 +145,6 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 6 complete: explainable relevance ranking, token budgeting with reserved headroom, file-based versioned prompts, `orch context`. |
 | 2026-08-02 | Milestone 7 complete: change proposals with full-file replacement, staged diffs, clean-tree precondition, gates run after apply. `orch review`, `orch propose` and its sub-commands. |
 | 2026-08-02 | Milestone 8 complete: roadmap parsing, milestone state, step runner with pre and post conditions, persisted run log, `orch roadmap`, `orch milestone`. |
+| 2026-08-02 | Milestone 9 complete: end to end orchestration. `orch next` plans, `orch milestone` implements and stages, `--apply` completes the loop. |
+| 2026-08-02 | Milestone 10 complete: append-only memory with keyword retrieval behind a swappable interface, `orch memory`, `orch memory add`, `orch history`. |
+| 2026-08-02 | Milestone 11 complete: retry with full jitter and Retry-After, narrow failover, advisory pricing and a usage ledger, OpenAI-compatible provider, memory verify and compact. Also completed the M10 recall wiring, which had silently failed to apply. |

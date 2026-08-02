@@ -176,10 +176,14 @@ export function fakeHttp(
     body?: string;
     lines?: readonly string[];
     throws?: boolean;
+    headers?: Record<string, string>;
+    /** Statuses to return in order before falling back to `status`. */
+    sequence?: readonly number[];
   } = {},
 ): FakeHttp {
   const requests: HttpRequest[] = [];
   const status = response.status ?? 200;
+  const sequence = [...(response.sequence ?? [])];
 
   return {
     requests,
@@ -191,10 +195,12 @@ export function fakeHttp(
       }
 
       const lines = response.lines ?? [];
+      const current = sequence.shift() ?? status;
 
       return Promise.resolve({
-        status,
-        ok: status >= 200 && status < 300,
+        status: current,
+        ok: current >= 200 && current < 300,
+        headers: response.headers ?? {},
         text: () => Promise.resolve(response.body ?? ""),
         // eslint-disable-next-line @typescript-eslint/require-await
         lines: async function* (): AsyncGenerator<string, void, undefined> {

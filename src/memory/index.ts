@@ -1,5 +1,6 @@
 export {
   appendMemory,
+  compactMemory,
   memoryDir,
   memoryPath,
   nextMemoryId,
@@ -12,7 +13,15 @@ export {
   tokenize,
 } from "./retrieve.js";
 export { describeRecord, isMemoryKind, MEMORY_KINDS } from "./types.js";
-export type { MemoryReadResult } from "./store.js";
+export {
+  readUsage,
+  recordUsage,
+  totalUsage,
+  usagePath,
+  USAGE_FILE,
+} from "./usage.js";
+export type { UsageEntry, UsageTotals } from "./usage.js";
+export type { CompactionResult, MemoryReadResult } from "./store.js";
 export type {
   RankedRecord,
   RetrievalOptions,

@@ -6,6 +6,7 @@
  */
 import {
   appendMemory,
+  compactMemory,
   defaultRetriever,
   describeRecord,
   isMemoryKind,
@@ -207,6 +208,102 @@ export const memoryAddCommand: CommandDefinition<MemoryAddData> = {
               value: record.commit === null ? null : record.commit.slice(0, 7),
             },
             { label: "Date", value: timestamp(record.createdAt) },
+          ],
+        },
+      };
+    });
+  },
+};
+
+export interface MemoryVerifyData {
+  readonly records: number;
+  readonly damaged: readonly number[];
+  readonly duplicates: readonly string[];
+  readonly healthy: boolean;
+}
+
+export const memoryVerifyCommand: CommandDefinition<MemoryVerifyData> = {
+  name: "memory verify",
+  summary: "Check project memory for damaged or duplicated records",
+  requires: { repository: true, initialized: true },
+
+  execute(context: CommandContext): Promise<CommandResult<MemoryVerifyData>> {
+    return attempt(() => {
+      const workspace = requireWorkspace(context);
+      const { records, damaged } = readMemory(
+        context.hosts.fs,
+        workspace.stateDir,
+      );
+
+      const seen = new Set<string>();
+      const duplicates: string[] = [];
+      for (const record of records) {
+        if (seen.has(record.id)) {
+          duplicates.push(record.id);
+        }
+        seen.add(record.id);
+      }
+
+      const healthy = damaged.length === 0 && duplicates.length === 0;
+
+      return {
+        data: { records: records.length, damaged, duplicates, healthy },
+        report: {
+          fields: [
+            { label: "Records", value: records.length },
+            {
+              label: "Damaged",
+              value:
+                damaged.length === 0
+                  ? "none"
+                  : `lines ${damaged.join(", ")}`,
+              status: damaged.length === 0 ? "pass" : "fail",
+            },
+            {
+              label: "Duplicates",
+              value: duplicates.length === 0 ? "none" : duplicates.join(", "),
+              status: duplicates.length === 0 ? "pass" : "warn",
+            },
+          ],
+          ...(healthy ? {} : { notes: ["Run `orch memory compact` to repair."] }),
+        },
+        exitCode: healthy ? EXIT_CODES.success : EXIT_CODES.failure,
+      };
+    });
+  },
+};
+
+export interface MemoryCompactData {
+  readonly before: number;
+  readonly after: number;
+  readonly removedDamaged: number;
+  readonly removedDuplicate: number;
+  readonly archivedTo: string;
+}
+
+export const memoryCompactCommand: CommandDefinition<MemoryCompactData> = {
+  name: "memory compact",
+  summary: "Rewrite memory, dropping damaged and duplicated records",
+  requires: { repository: true, initialized: true },
+
+  execute(context: CommandContext): Promise<CommandResult<MemoryCompactData>> {
+    return attempt(() => {
+      const workspace = requireWorkspace(context);
+      const result = compactMemory(
+        context.hosts.fs,
+        workspace.stateDir,
+        context.hosts.clock.now(),
+      );
+
+      return {
+        data: result,
+        report: {
+          fields: [
+            { label: "Lines before", value: result.before },
+            { label: "Records after", value: result.after },
+            { label: "Damaged dropped", value: result.removedDamaged },
+            { label: "Duplicates dropped", value: result.removedDuplicate },
+            { label: "Archived", value: result.archivedTo },
           ],
         },
       };

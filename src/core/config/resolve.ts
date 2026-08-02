@@ -74,8 +74,10 @@ function coerceStructured(
     }
 
     case "number": {
-      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-        throw new ConfigurationError(`${key} must be a positive number`);
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+        throw new ConfigurationError(
+          `${key} must be a non-negative number`,
+        );
       }
       return value;
     }

@@ -6,7 +6,8 @@
  * History is the log; memory is the reasoning.
  */
 import { listRuns, loadRoadmap } from "../../workflow/index.js";
-import { readMemory } from "../../memory/index.js";
+import { readMemory, readUsage, totalUsage } from "../../memory/index.js";
+import { formatCost } from "../../providers/index.js";
 import { attempt, requireConfig, requireWorkspace } from "../command.js";
 import type { WorkflowRun } from "../../workflow/index.js";
 import type { CommandContext, CommandDefinition, CommandResult, FieldStatus, ReportField } from "../command.js";
@@ -15,6 +16,7 @@ export interface HistoryData {
   readonly completed: readonly { readonly id: string; readonly title: string }[];
   readonly runs: readonly WorkflowRun[];
   readonly memoryRecords: number;
+  readonly usage: ReturnType<typeof totalUsage>;
 }
 
 function relativeAge(now: number, then: number): string {
@@ -71,6 +73,7 @@ export const historyCommand: CommandDefinition<HistoryData> = {
         context.hosts.fs,
         workspace.stateDir,
       ).records.length;
+      const usage = totalUsage(readUsage(context.hosts.fs, workspace.stateDir));
 
       const now = context.hosts.clock.now();
       const onlyRuns = context.options["runs"] === true;
@@ -82,6 +85,16 @@ export const historyCommand: CommandDefinition<HistoryData> = {
         },
         { label: "Runs", value: runs.length },
         { label: "Memory", value: `${String(memoryRecords)} records` },
+        {
+          label: "Spend",
+          value: `${String(usage.calls)} calls, ${String(
+            usage.inputTokens + usage.outputTokens,
+          )} tokens, ${formatCost(usage.costUsd)}${
+            usage.unpriced === 0
+              ? ""
+              : ` (${String(usage.unpriced)} unpriced)`
+          }`,
+        },
         ...(onlyRuns
           ? []
           : completed.map(
@@ -103,7 +116,7 @@ export const historyCommand: CommandDefinition<HistoryData> = {
       ];
 
       return {
-        data: { completed, runs, memoryRecords },
+        data: { completed, runs, memoryRecords, usage },
         report: {
           fields,
           ...(runs.length === 0 ? { notes: ["No runs recorded yet."] } : {}),

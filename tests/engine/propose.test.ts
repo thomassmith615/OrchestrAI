@@ -219,6 +219,13 @@ describe("reviewCommand", () => {
     expect(result.data.summary.length).toBeGreaterThan(0);
     expect(result.data.promptRef).toBe("review@1");
     expect(result.data.filesReviewed).toBeGreaterThan(0);
-    expect(fs.files.size).toBe(before.size);
+
+    // The usage ledger is the only thing a read-only command writes, and it
+    // lives under .orchestrai rather than in the repository.
+    for (const path of before.keys()) {
+      expect(fs.files.get(path)).toBe(before.get(path));
+    }
+    const added = [...fs.files.keys()].filter((path) => !before.has(path));
+    expect(added).toEqual(["/repo/.orchestrai/usage.jsonl"]);
   });
 });

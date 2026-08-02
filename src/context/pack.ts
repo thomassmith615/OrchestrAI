@@ -33,6 +33,16 @@ export interface DroppedFile {
   readonly tokens: number;
 }
 
+/**
+ * Recalled knowledge, in a shape the packer can render without knowing what
+ * produced it. Milestone 10 supplies memory records; another source could
+ * supply anything else.
+ */
+export interface ContextNote {
+  readonly title: string;
+  readonly body: string;
+}
+
 export interface PackedContext {
   /** The assembled text, ready to interpolate into a prompt. */
   readonly text: string;
@@ -42,6 +52,9 @@ export interface PackedContext {
   readonly usable: number;
   readonly included: readonly IncludedFile[];
   readonly dropped: readonly DroppedFile[];
+  /** Tokens spent on recalled knowledge rather than on files. */
+  readonly noteTokens: number;
+  readonly notes: number;
 }
 
 export interface PackOptions {
@@ -52,6 +65,8 @@ export interface PackOptions {
   readonly budget: number;
   readonly focus?: readonly string[];
   readonly recent?: readonly string[];
+  /** Recalled knowledge, budgeted before files because it is denser. */
+  readonly notes?: readonly ContextNote[];
   readonly estimate?: TokenEstimator;
   /** Overrides the headroom fraction. Mainly for tests. */
   readonly headroom?: number;
@@ -112,6 +127,32 @@ export function packContext(options: PackOptions): PackedContext {
   const sections: string[] = [header(options.scan, options.toolchain)];
   let tokens = estimate(sections[0] ?? "");
 
+  // Recalled knowledge goes in before files: it is denser than source, and it
+  // is the part a fresh conversation cannot reconstruct. It is capped at a
+  // third of the window, because a context that is all history explains
+  // nothing about the code.
+  const notes = options.notes ?? [];
+  let noteTokens = 0;
+  let noteCount = 0;
+
+  if (notes.length > 0) {
+    const rendered = [
+      "# Project memory",
+      "",
+      ...notes.map((note) => `## ${note.title}\n\n${note.body.trim()}`),
+      "",
+    ].join("\n");
+
+    const cost = estimate(rendered);
+
+    if (cost <= usable / 3) {
+      sections.push(rendered);
+      tokens += cost;
+      noteTokens = cost;
+      noteCount = notes.length;
+    }
+  }
+
   for (const ranked of rankFiles(options.scan.files, rankOptions)) {
     let content: string;
     try {
@@ -155,6 +196,8 @@ export function packContext(options: PackOptions): PackedContext {
     usable,
     included,
     dropped,
+    noteTokens,
+    notes: noteCount,
   };
 }
 

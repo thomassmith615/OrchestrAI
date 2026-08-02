@@ -68,11 +68,15 @@ export interface HttpRequest {
   readonly method: string;
   readonly headers: Readonly<Record<string, string>>;
   readonly body: string;
+  /** Abort the request after this many milliseconds. */
+  readonly timeoutMs?: number;
 }
 
 export interface HttpResponse {
   readonly status: number;
   readonly ok: boolean;
+  /** Response headers, lower cased. Carries `retry-after` on a 429. */
+  readonly headers: Readonly<Record<string, string>>;
   text(): Promise<string>;
   /** Response body as newline delimited chunks, for server sent events. */
   lines(): AsyncIterable<string>;
@@ -183,11 +187,20 @@ export const nodeHttpHost: HttpHost = {
       method: request.method,
       headers: { ...request.headers },
       body: request.body,
+      ...(request.timeoutMs === undefined
+        ? {}
+        : { signal: AbortSignal.timeout(request.timeoutMs) }),
+    });
+
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headers[key.toLowerCase()] = value;
     });
 
     return {
       status: response.status,
       ok: response.ok,
+      headers,
       text: () => response.text(),
       lines: () => decodeLines(response),
     };

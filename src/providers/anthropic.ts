@@ -6,6 +6,7 @@
  * Nothing in this file is visible outside `src/providers`.
  */
 import { ProviderError } from "./types.js";
+import { retryAfterMs } from "./resilience.js";
 import type { HttpHost, HttpResponse } from "../core/hosts.js";
 import type {
   CompletionChunk,
@@ -18,7 +19,7 @@ import type {
   TokenUsage,
 } from "./types.js";
 
-const API_URL = "https://api.anthropic.com/v1/messages";
+const DEFAULT_BASE_URL = "https://api.anthropic.com/v1";
 const API_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const CREDENTIAL_ENV = "ANTHROPIC_API_KEY";
@@ -49,7 +50,13 @@ function mapStopReason(reason: string | undefined): StopReason {
   }
 }
 
-function failFor(status: number, detail: string): ProviderError {
+function failFor(
+  status: number,
+  detail: string,
+  headers: Readonly<Record<string, string>> = {},
+): ProviderError {
+  const retryAfter = retryAfterMs(headers["retry-after"]);
+
   if (status === 401 || status === 403) {
     return new ProviderError("anthropic", "credentials", detail, {
       status,
@@ -57,10 +64,16 @@ function failFor(status: number, detail: string): ProviderError {
     });
   }
   if (status === 429) {
-    return new ProviderError("anthropic", "rate_limit", detail, { status });
+    return new ProviderError("anthropic", "rate_limit", detail, {
+      status,
+      ...(retryAfter === null ? {} : { retryAfterMs: retryAfter }),
+    });
   }
   if (status >= 500) {
-    return new ProviderError("anthropic", "server", detail, { status });
+    return new ProviderError("anthropic", "server", detail, {
+      status,
+      ...(retryAfter === null ? {} : { retryAfterMs: retryAfter }),
+    });
   }
   return new ProviderError("anthropic", "request", detail, { status });
 }
@@ -119,10 +132,12 @@ async function send(
   apiKey: string,
   body: string,
   stream: boolean,
+  baseUrl: string,
+  timeoutMs: number | undefined,
 ): Promise<HttpResponse> {
   try {
     return await http.send({
-      url: API_URL,
+      url: `${baseUrl.replace(/\/$/, "")}/messages`,
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -131,6 +146,7 @@ async function send(
         ...(stream ? { accept: "text/event-stream" } : {}),
       },
       body,
+      ...(timeoutMs === undefined ? {} : { timeoutMs }),
     });
   } catch (cause) {
     throw new ProviderError(
@@ -204,6 +220,8 @@ export const anthropicProvider: ProviderDescriptor = {
 
   create(options: ProviderOptions): Provider {
     const configuredModel = options.model ?? DEFAULT_MODEL;
+    const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL;
+    const timeoutMs = options.timeoutMs;
 
     return {
       id: "anthropic",
@@ -220,10 +238,16 @@ export const anthropicProvider: ProviderDescriptor = {
           apiKey,
           buildBody(request, model, false),
           false,
+          baseUrl,
+          timeoutMs,
         );
 
         if (!response.ok) {
-          throw failFor(response.status, await describeFailure(response));
+          throw failFor(
+            response.status,
+            await describeFailure(response),
+            response.headers,
+          );
         }
 
         const parsed = JSON.parse(await response.text()) as AnthropicMessageResponse;
@@ -254,10 +278,16 @@ export const anthropicProvider: ProviderDescriptor = {
           apiKey,
           buildBody(request, model, true),
           true,
+          baseUrl,
+          timeoutMs,
         );
 
         if (!response.ok) {
-          throw failFor(response.status, await describeFailure(response));
+          throw failFor(
+            response.status,
+            await describeFailure(response),
+            response.headers,
+          );
         }
 
         let text = "";
