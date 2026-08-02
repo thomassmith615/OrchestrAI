@@ -49,8 +49,8 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch build` | Execute the configured build pipeline | M5, available |
 | `orch test` | Execute all configured validation | M5, available |
 | `orch review` | Generate an engineering summary for human review | M7, available |
-| `orch roadmap` | Display the roadmap and milestone progression | M8 |
-| `orch milestone` | Execute the current milestone workflow | M8 |
+| `orch roadmap` | Display the roadmap and milestone progression | M8, available |
+| `orch milestone` | Execute the current milestone workflow | M8, available |
 | `orch next` | Determine the next milestone and prepare the workflow | M9 |
 | `orch memory` | Inspect project memory | M10 |
 | `orch history` | Display engineering history and completed milestones | M10 |
@@ -203,6 +203,28 @@ loop runs offline with no API key:
 ```bash
 orch provider add mock && orch propose "anything"
 ```
+
+## Workflow
+
+```bash
+orch roadmap              # milestone progression, current one marked
+orch roadmap --all        # including completed milestones
+orch milestone            # run the workflow for the current milestone
+orch milestone --dry-run  # list the stages without running them
+orch milestone --id 9     # target a specific milestone
+```
+
+The roadmap is read from the `roadmapPath` setting, default `docs/ROADMAP.md`.
+Orchestraᵢ parses that file and never rewrites it: it is a document a human
+maintains.
+
+The workflow runs the charter's development process as stages. It stops at the
+first failure and exits 3, recording the remaining stages as skipped. Runs are
+logged to `.orchestrai/runs/`.
+
+Stages available now: `understand`, `analyze`, `preflight`, `baseline`,
+`verify`, `summarize`. The baseline runs before any change, so a repository that
+is already red is reported as such rather than blamed on the run.
 
 ## Preconditions
 

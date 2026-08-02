@@ -70,7 +70,7 @@ Providers know nothing about workflows. Surfaces are thin.
 | `src/memory` | Durable project knowledge in `.orchestrai/`. | M10 |
 | `src/gates` | Gate execution against the detected toolchain, and result persistence. | M5 |
 | `src/proposals` | Change parsing, staging, diffing, and application. The write path. | M7 |
-| `src/workflow` | Milestone state and step execution. | M8 |
+| `src/workflow` | Roadmap parsing, step contract, execution, and run log. | M8 |
 | `src/plugins` | Third party extension points. | M12 |
 | `src/dashboard` | Read only local web surface. | M12 |
 

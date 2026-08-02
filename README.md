@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 7 of 12 is complete.
+Version 1 is under construction. Milestone 8 of 12 is complete.
 
 ## Requirements
 
@@ -52,12 +52,14 @@ Available today:
 | `orch review` | Ask the provider for an engineering summary |
 | `orch propose <task>` | Stage a change for review. Writes nothing |
 | `orch propose apply` | Write a reviewed proposal and run the gates |
+| `orch roadmap` | Milestone progression, current one marked |
+| `orch milestone` | Run the workflow for the current milestone |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`next`, `milestone`, `memory`, `history`, `plugins`,
-`dashboard`, `update`) is
+The full planned surface (`next`, `memory`, `history`, `plugins`, `dashboard`,
+`update`) is
 specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
 one. Planned commands are not stubbed: help output lists only what works.
 
@@ -105,6 +107,7 @@ src/gates/    gate execution against the detected toolchain, result persistence
 src/context/  relevance ranking, token budgeting, context assembly
 src/prompts/  versioned .md templates, typed interpolation, registry
 src/proposals/ change parsing, staging, diffing, application. The write path.
+src/workflow/ roadmap parsing, step contract, execution, run log
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

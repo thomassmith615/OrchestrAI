@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 7 complete. Next up: Milestone 8.
+**Current position:** Milestone 8 complete. Next up: Milestone 9.
 
 ---
 
@@ -68,7 +68,7 @@ milestone, and implement the next unchecked one.
   as good as what reaches the context window. Delivers `orch context`, an
   inspection surface for what would be sent and what would be dropped.
 
-- [ ] **M7. `orchestrai analyze` and change proposals**
+- [x] **M7. `orch review` and change proposals**
   A repository health and architecture report combining scanner, fingerprint,
   git, and a provider call. Then the first write path: model output becomes a
   reviewable patch in a staging area, never a direct write to the working tree.
@@ -78,14 +78,14 @@ milestone, and implement the next unchecked one.
 
 ## Part 3: Make it a workflow (M8 to M9)
 
-- [ ] **M8. Workflow engine**
+- [x] **M8. Workflow engine**
   Parse this roadmap file, track completion state in `.orchestrai/`, expose
   `milestone status` and `milestone list`. Declarative workflow steps with
   preconditions, postconditions, dry run mode, and a structured run log. The
   charter's nine step development process expressed as executable stages.
   Delivers `orch roadmap`, `orch milestone`.
 
-- [ ] **M9. `orchestrai milestone next`**
+- [ ] **M9. `orch next`**
   End to end orchestration: analyze, recall, plan, propose, verify, summarize,
   record. Every prior milestone is a component of this one command. When this
   works, the platform is what the charter describes. Delivers `orch next`.
@@ -144,3 +144,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 5 complete: git status, commit metadata and diff reading, gate runner with timeouts, persisted gate results, `orch build`, `orch test`, `orch status --verify`. Gate failures exit 3. |
 | 2026-08-02 | Milestone 6 complete: explainable relevance ranking, token budgeting with reserved headroom, file-based versioned prompts, `orch context`. |
 | 2026-08-02 | Milestone 7 complete: change proposals with full-file replacement, staged diffs, clean-tree precondition, gates run after apply. `orch review`, `orch propose` and its sub-commands. |
+| 2026-08-02 | Milestone 8 complete: roadmap parsing, milestone state, step runner with pre and post conditions, persisted run log, `orch roadmap`, `orch milestone`. |

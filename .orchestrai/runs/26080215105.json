@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "id": "26080215105",
+    "milestoneId": "9",
+    "milestoneTitle": "`orch next`",
+    "startedAt": 1785683455713,
+    "durationMs": 38,
+    "dryRun": false,
+    "steps": [
+      {
+        "name": "understand",
+        "description": "Read the current milestone objective from the roadmap",
+        "status": "ok",
+        "detail": "M9: `orch next`",
+        "durationMs": 0
+      },
+      {
+        "name": "analyze",
+        "description": "Inventory the repository and detect its toolchain",
+        "status": "ok",
+        "detail": "137 files, node",
+        "durationMs": 4
+      },
+      {
+        "name": "preflight",
+        "description": "Confirm the working tree is clean enough to change",
+        "status": "failed",
+        "detail": "the working tree has uncommitted changes",
+        "durationMs": 34
+      },
+      {
+        "name": "baseline",
+        "description": "Run the validation gates before making any change",
+        "status": "skipped",
+        "detail": "earlier step failed",
+        "durationMs": 0
+      },
+      {
+        "name": "verify",
+        "description": "Run the validation gates after the change",
+        "status": "skipped",
+        "detail": "earlier step failed",
+        "durationMs": 0
+      },
+      {
+        "name": "summarize",
+        "description": "Report what the run did and what remains",
+        "status": "skipped",
+        "detail": "earlier step failed",
+        "durationMs": 0
+      }
+    ],
+    "status": "failed",
+    "failedAt": "preflight"
+  }
+}

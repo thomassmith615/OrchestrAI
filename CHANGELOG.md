@@ -7,6 +7,18 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 8: workflow engine.
+  - Roadmap parsing from the `roadmapPath` setting. Tolerant by design:
+    Orchestraᵢ reads the file, a human owns it. See ADR 0011.
+  - Step contract with preconditions and postconditions, where skipping is not
+    failing. Steps import neither the engine nor a provider.
+  - Workflow execution that stops at the first failure and records the rest as
+    skipped, with a persisted run log under `.orchestrai/runs/`.
+  - Built-in stages: understand, analyze, preflight, baseline, verify,
+    summarize. The baseline runs before any change so an already-red repository
+    is reported rather than blamed on the run.
+  - `orch roadmap` and `orch milestone`, with `--dry-run` and `--id`.
+
 - Milestone 7: engineering review and change proposals.
   - `orch review`, a read-only engineering summary from the configured
     provider.
