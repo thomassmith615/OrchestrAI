@@ -66,6 +66,7 @@ describe("createRegistry", () => {
       "info",
       "init",
       "milestone",
+      "next",
       "propose",
       "propose apply",
       "propose list",

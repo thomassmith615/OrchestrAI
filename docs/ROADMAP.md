@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 8 complete. Next up: Milestone 9.
+**Current position:** Milestone 9 complete. Next up: Milestone 10.
 
 ---
 
@@ -85,7 +85,7 @@ milestone, and implement the next unchecked one.
   charter's nine step development process expressed as executable stages.
   Delivers `orch roadmap`, `orch milestone`.
 
-- [ ] **M9. `orch next`**
+- [x] **M9. `orch next`**
   End to end orchestration: analyze, recall, plan, propose, verify, summarize,
   record. Every prior milestone is a component of this one command. When this
   works, the platform is what the charter describes. Delivers `orch next`.
@@ -145,3 +145,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 6 complete: explainable relevance ranking, token budgeting with reserved headroom, file-based versioned prompts, `orch context`. |
 | 2026-08-02 | Milestone 7 complete: change proposals with full-file replacement, staged diffs, clean-tree precondition, gates run after apply. `orch review`, `orch propose` and its sub-commands. |
 | 2026-08-02 | Milestone 8 complete: roadmap parsing, milestone state, step runner with pre and post conditions, persisted run log, `orch roadmap`, `orch milestone`. |
+| 2026-08-02 | Milestone 9 complete: end to end orchestration. `orch next` plans, `orch milestone` implements and stages, `--apply` completes the loop. Workflow reaches a model through a declared port. |

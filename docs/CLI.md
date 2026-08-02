@@ -51,7 +51,7 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch review` | Generate an engineering summary for human review | M7, available |
 | `orch roadmap` | Display the roadmap and milestone progression | M8, available |
 | `orch milestone` | Execute the current milestone workflow | M8, available |
-| `orch next` | Determine the next milestone and prepare the workflow | M9 |
+| `orch next` | Determine the next milestone and prepare the workflow | M9, available |
 | `orch memory` | Inspect project memory | M10 |
 | `orch history` | Display engineering history and completed milestones | M10 |
 | `orch plugins` | Manage Orchestraᵢ plugins | M12 |
@@ -222,9 +222,21 @@ The workflow runs the charter's development process as stages. It stops at the
 first failure and exits 3, recording the remaining stages as skipped. Runs are
 logged to `.orchestrai/runs/`.
 
-Stages available now: `understand`, `analyze`, `preflight`, `baseline`,
-`verify`, `summarize`. The baseline runs before any change, so a repository that
-is already red is reported as such rather than blamed on the run.
+```bash
+orch next                 # plan the next milestone. Writes nothing.
+orch milestone            # plan, then stage a proposal for review
+orch milestone --apply    # complete the loop: write it and verify
+```
+
+`next` ends at a plan on purpose: a design is the cheapest thing to argue with.
+`milestone` uses that plan as agreed context and stages a proposal. Applying is
+opt in on each invocation, because the flag is the consent.
+
+Stages: `understand`, `analyze`, `preflight`, `baseline`, `plan`, `implement`,
+`apply`, `verify`, `summarize`. The cheap gates run first, so a dirty tree stops
+the run before any tokens are spent. The baseline runs before any change, so a
+repository that is already red is reported as such rather than blamed on the
+run.
 
 ## Preconditions
 

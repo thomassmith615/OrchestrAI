@@ -29,7 +29,7 @@ async function execute(
   steps: readonly Step[],
   dryRun = false,
 ): Promise<WorkflowRun> {
-  return executeWorkflow({
+  return (await executeWorkflow({
     steps,
     dryRun,
     runId: "test-run",
@@ -39,6 +39,7 @@ async function execute(
       hosts: fakeHosts({ clock: fakeClock() }),
       logger: createLogger({ level: "silent" }),
       toolchain: TOOLCHAIN,
+      apply: false,
       milestone: {
         id: "8",
         number: 8,
@@ -48,7 +49,7 @@ async function execute(
         phase: null,
       },
     },
-  });
+  })).run;
 }
 
 describe("executeWorkflow", () => {

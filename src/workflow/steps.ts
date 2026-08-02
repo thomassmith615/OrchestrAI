@@ -15,6 +15,33 @@ import type { Logger } from "../core/logger.js";
 import type { Toolchain } from "../repo/toolchain.js";
 import type { Milestone } from "./roadmap.js";
 
+/**
+ * The port a step uses to reach a model.
+ *
+ * Declared here rather than imported from the engine so that `src/workflow`
+ * stays free of provider and surface types. The engine supplies the adapter.
+ */
+export interface AiCall {
+  readonly promptId: string;
+  readonly variables?: Readonly<Record<string, string>>;
+  readonly focus?: readonly string[];
+  readonly maxTokens?: number;
+}
+
+export interface AiReply {
+  readonly text: string;
+  readonly provider: string;
+  readonly model: string;
+  readonly promptRef: string;
+  readonly contextTokens: number;
+  readonly usage: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+  };
+}
+
+export type AiPort = (call: AiCall) => Promise<AiReply>;
+
 export type StepStatus = "ok" | "failed" | "skipped";
 
 export interface StepOutcome {
@@ -36,6 +63,10 @@ export interface StepContext {
   readonly dryRun: boolean;
   /** Outputs of earlier steps in this run. */
   readonly data: ReadonlyMap<string, unknown>;
+  /** Absent when the workflow is running without a provider. */
+  readonly ai?: AiPort;
+  /** True when the operator asked for the change to be applied. */
+  readonly apply: boolean;
 }
 
 export interface Step {

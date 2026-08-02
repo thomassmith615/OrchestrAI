@@ -1,3 +1,7 @@
+{{context}}
+
+---
+
 Review this repository and report on its architecture and health.
 
 Cover, in this order:
@@ -11,5 +15,3 @@ Cover, in this order:
 
 Ground every claim in a file you were shown. Where the context is incomplete,
 say what you would need to see.
-
-{{context}}

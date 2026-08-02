@@ -1,14 +1,13 @@
 /**
- * `orch milestone` executes the workflow for the current milestone.
+ * `orch next` determines the next milestone and prepares the work.
  *
- * At this milestone the pipeline contains the stages that need no model:
- * understand, analyze, preflight, baseline, verify, summarize. Milestone 9
- * splices design and implement into the same pipeline and exposes it as
- * `orch next`.
+ * It ends at a plan, on purpose. The design is the cheapest thing to argue
+ * with, and reading it before any code exists is what keeps a human in the
+ * loop rather than reviewing a fait accompli.
  */
 import { detectToolchain } from "../../repo/index.js";
 import {
-  MILESTONE_WORKFLOW,
+  PREPARE_WORKFLOW,
   executeWorkflow,
   findMilestone,
   listRuns,
@@ -19,54 +18,29 @@ import {
 import { EXIT_CODES } from "../../core/errors.js";
 import { aiPort } from "../ai.js";
 import { requireConfig, requireWorkspace } from "../command.js";
+import { stepFields } from "./milestone.js";
 import type { Milestone, WorkflowRun } from "../../workflow/index.js";
 import type { ExitCode } from "../../core/errors.js";
-import type { CommandContext, CommandDefinition, CommandResult, FieldStatus, ReportField } from "../command.js";
+import type { CommandContext, CommandDefinition, CommandResult } from "../command.js";
 
-export interface MilestoneData {
+export interface NextData {
   readonly milestone: Milestone | null;
-  readonly run: WorkflowRun;
-  readonly recorded: boolean;
   readonly plan: string | null;
-  readonly proposalId: string | null;
+  readonly run: WorkflowRun;
+  readonly remaining: number;
 }
 
-const STEP_STATUS: Readonly<Record<string, FieldStatus>> = {
-  ok: "pass",
-  failed: "fail",
-  skipped: "info",
-};
-
-function formatDuration(ms: number): string {
-  return ms < 1000 ? `${String(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
-}
-
-export function stepFields(run: WorkflowRun): ReportField[] {
-  return run.steps.map((step) => ({
-    label: step.name,
-    value:
-      step.status === "skipped"
-        ? step.detail
-        : `${step.detail} (${formatDuration(step.durationMs)})`,
-    status: STEP_STATUS[step.status] ?? "info",
-  }));
-}
-
-export const milestoneCommand: CommandDefinition<MilestoneData> = {
-  name: "milestone",
-  summary: "Execute the workflow for the current milestone",
+export const nextCommand: CommandDefinition<NextData> = {
+  name: "next",
+  summary: "Determine the next milestone and prepare the engineering workflow",
   options: [
     { flags: "--id <id>", description: "Target a specific milestone" },
     { flags: "--dry-run", description: "List the stages without running them" },
-    {
-      flags: "--apply",
-      description: "Write the proposal to the working tree and verify it",
-    },
     { flags: "--max-tokens <count>", description: "Response budget per call" },
   ],
   requires: { repository: true, config: true, initialized: true },
 
-  async execute(context: CommandContext): Promise<CommandResult<MilestoneData>> {
+  async execute(context: CommandContext): Promise<CommandResult<NextData>> {
     const workspace = requireWorkspace(context);
     const config = requireConfig(context);
 
@@ -82,15 +56,16 @@ export const milestoneCommand: CommandDefinition<MilestoneData> = {
         ? (findMilestone(roadmap, idOption) ?? null)
         : roadmap.current;
 
-    const dryRun = context.options["dryRun"] === true;
     const maxTokensOption = context.options["maxTokens"];
     const maxTokens =
       typeof maxTokensOption === "string"
         ? Number.parseInt(maxTokensOption, 10)
         : undefined;
 
+    const dryRun = context.options["dryRun"] === true;
+
     const outcome = await executeWorkflow({
-      steps: MILESTONE_WORKFLOW,
+      steps: PREPARE_WORKFLOW,
       dryRun,
       runId: nextRunId(
         context.hosts.clock.now(),
@@ -103,7 +78,7 @@ export const milestoneCommand: CommandDefinition<MilestoneData> = {
         logger: context.logger,
         toolchain: detectToolchain(context.hosts.fs, workspace.root),
         milestone,
-        apply: context.options["apply"] === true,
+        apply: false,
         ai: aiPort(
           context,
           maxTokens === undefined || Number.isNaN(maxTokens)
@@ -114,39 +89,19 @@ export const milestoneCommand: CommandDefinition<MilestoneData> = {
     });
 
     const { run } = outcome;
-    const plan = (outcome.data.get("plan") as string | undefined) ?? null;
-    const proposal = outcome.data.get("proposal") as
-      | { id: string }
-      | undefined;
 
-    const recorded = dryRun
-      ? false
-      : recordRun(context.hosts.fs, workspace.stateDir, run);
+    if (!dryRun) {
+      recordRun(context.hosts.fs, workspace.stateDir, run);
+    }
+
+    const plan = (outcome.data.get("plan") as string | undefined) ?? null;
+    const remaining = roadmap.total - roadmap.completed;
 
     const exitCode: ExitCode =
       run.status === "failed" ? EXIT_CODES.validation : EXIT_CODES.success;
 
-    const notes: string[] = [];
-    if (run.failedAt !== null) {
-      notes.push(`Stopped at \`${run.failedAt}\`.`);
-    }
-    if (dryRun) {
-      notes.push("Dry run: nothing was executed or recorded.");
-    }
-    if (proposal !== undefined && context.options["apply"] !== true) {
-      notes.push(
-        `Staged as ${proposal.id}. Review with \`orch propose show\`, then \`orch propose apply\`.`,
-      );
-    }
-
     return {
-      data: {
-        milestone,
-        run,
-        recorded,
-        plan,
-        proposalId: proposal?.id ?? null,
-      },
+      data: { milestone, plan, run, remaining },
       report: {
         fields: [
           {
@@ -156,10 +111,14 @@ export const milestoneCommand: CommandDefinition<MilestoneData> = {
                 ? "none pending"
                 : `M${milestone.id}: ${milestone.title}`,
           },
+          { label: "Remaining", value: remaining },
           { label: "Run", value: run.id },
           ...stepFields(run),
         ],
-        ...(notes.length > 0 ? { notes } : {}),
+        notes: [
+          ...(run.failedAt === null ? [] : [`Stopped at \`${run.failedAt}\`.`]),
+          ...(plan === null ? [] : ["", plan]),
+        ],
       },
       exitCode,
     };

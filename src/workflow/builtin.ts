@@ -10,6 +10,18 @@
 import { readGitStatus } from "../repo/git.js";
 import { scanRepository } from "../repo/scan.js";
 import { runGates, VALIDATION_GATES } from "../gates/index.js";
+import {
+  applyProposal,
+  changeSummary,
+  ensureApplicable,
+  listProposals,
+  nextProposalId,
+  parseChangeBlocks,
+  saveProposal,
+  setStatus,
+} from "../proposals/index.js";
+import { join } from "node:path";
+import type { Proposal } from "../proposals/index.js";
 import type { GateRun } from "../gates/index.js";
 import type { ScanSummary } from "../repo/scan.js";
 import type { Step, StepContext, StepOutcome } from "./steps.js";
@@ -126,15 +138,172 @@ export const preflightStep: Step = {
   },
 };
 
+/** Charter step 4: design before implementation. */
+export const planStep: Step = {
+  name: "plan",
+  description: "Design an approach for the milestone",
+
+  precondition(context: StepContext): string | null {
+    if (context.ai === undefined) {
+      return "no provider available";
+    }
+    return context.milestone === null ? "no milestone to plan" : null;
+  },
+
+  async run(context: StepContext): Promise<StepOutcome> {
+    const ask = context.ai;
+    if (ask === undefined) {
+      return { status: "failed", detail: "no provider available" };
+    }
+
+    const objective =
+      (context.data.get("objective") as string | undefined) ??
+      context.milestone?.title ??
+      "";
+
+    const reply = await ask({
+      promptId: "plan",
+      variables: { objective },
+      focus: keywords(objective),
+    });
+
+    return {
+      status: "ok",
+      detail: `${reply.model}, ${String(reply.usage.outputTokens)} tokens out`,
+      produces: { plan: reply.text, planReply: reply },
+    };
+  },
+
+  postcondition(_context: StepContext, outcome: StepOutcome): string | null {
+    const plan = outcome.produces?.["plan"];
+
+    return typeof plan === "string" && plan.trim().length > 0
+      ? null
+      : "the provider returned an empty plan";
+  },
+};
+
+/** Charter step 5: implement only the required feature. */
+export const implementStep: Step = {
+  name: "implement",
+  description: "Stage a change proposal for review",
+
+  precondition(context: StepContext): string | null {
+    if (context.ai === undefined) {
+      return "no provider available";
+    }
+    return context.data.has("plan") ? null : "no plan was produced";
+  },
+
+  async run(context: StepContext): Promise<StepOutcome> {
+    const ask = context.ai;
+    if (ask === undefined) {
+      return { status: "failed", detail: "no provider available" };
+    }
+
+    const objective =
+      (context.data.get("objective") as string | undefined) ??
+      context.milestone?.title ??
+      "";
+    const plan = (context.data.get("plan") as string | undefined) ?? "";
+
+    const reply = await ask({
+      promptId: "propose",
+      variables: { task: `${objective}\n\n## Agreed approach\n\n${plan}` },
+      focus: keywords(objective),
+    });
+
+    const parsed = parseChangeBlocks(reply.text, {
+      existing: (path) => {
+        const absolute = join(context.root, path);
+        return context.hosts.fs.exists(absolute)
+          ? context.hosts.fs.readFile(absolute)
+          : null;
+      },
+    });
+
+    if (parsed.changes.length === 0) {
+      return {
+        status: "failed",
+        detail: `no changes proposed: ${parsed.notes.slice(0, 160)}`,
+      };
+    }
+
+    const proposal: Proposal = {
+      id: nextProposalId(
+        context.hosts.clock.now(),
+        listProposals(context.hosts.fs, context.stateDir).map((entry) => entry.id),
+      ),
+      task: objective,
+      status: "open",
+      createdAt: context.hosts.clock.now(),
+      changes: parsed.changes,
+      notes: parsed.notes,
+      provider: reply.provider,
+      model: reply.model,
+      promptRef: reply.promptRef,
+      contextTokens: reply.contextTokens,
+      usage: reply.usage,
+    };
+
+    saveProposal(context.hosts.fs, context.stateDir, proposal);
+    const summary = changeSummary(proposal.changes);
+
+    return {
+      status: "ok",
+      detail: `${proposal.id}: ${String(summary.files)} files, +${String(summary.added)} -${String(summary.removed)}`,
+      produces: { proposal },
+    };
+  },
+};
+
+/**
+ * Charter Principle 2 lives here: the change reaches the working tree only
+ * when the operator asked for it on this invocation.
+ */
+export const applyStep: Step = {
+  name: "apply",
+  description: "Write the staged proposal to the working tree",
+
+  precondition(context: StepContext): string | null {
+    if (!context.apply) {
+      return "staged for review, not applied";
+    }
+    return context.data.has("proposal") ? null : "nothing to apply";
+  },
+
+  run(context: StepContext): StepOutcome {
+    const proposal = context.data.get("proposal") as Proposal;
+    const git = readGitStatus(context.hosts.proc, context.root);
+
+    ensureApplicable(proposal, git, false);
+
+    const outcome = applyProposal(
+      context.hosts.fs,
+      context.hosts.proc,
+      context.root,
+      proposal,
+    );
+
+    setStatus(context.hosts.fs, context.stateDir, proposal, "applied");
+
+    return {
+      status: "ok",
+      detail: `${String(outcome.written.length)} files written`,
+      produces: { applied: outcome },
+    };
+  },
+};
+
 /** Charter steps 6 and 8: tests pass and the repository builds. */
 export const verifyStep: Step = {
   name: "verify",
   description: "Run the validation gates after the change",
 
   precondition(context: StepContext): string | null {
-    return context.data.has("proposal")
+    return context.data.has("applied")
       ? null
-      : "no change was made in this run";
+      : "nothing was applied in this run";
   },
 
   run(context: StepContext): StepOutcome {
@@ -162,6 +331,24 @@ export const verifyStep: Step = {
   },
 };
 
+/** Terms from the objective, used to steer context selection. */
+function keywords(objective: string): readonly string[] {
+  const stop = new Set([
+    "with", "that", "this", "from", "into", "over", "than", "then", "when",
+    "each", "must", "will", "have", "them", "they", "your", "and", "the",
+    "for", "are", "not", "but", "its",
+  ]);
+
+  return [
+    ...new Set(
+      objective
+        .toLowerCase()
+        .split(/[^a-z0-9_-]+/)
+        .filter((term) => term.length > 3 && !stop.has(term)),
+    ),
+  ].slice(0, 8);
+}
+
 /** Charter step 9: complete the milestone. */
 export const summarizeStep: Step = {
   name: "summarize",
@@ -175,11 +362,14 @@ export const summarizeStep: Step = {
       parts.push(`${String(scan.files.length)} files reviewed`);
     }
 
+    const proposal = context.data.get("proposal") as Proposal | undefined;
+    if (proposal !== undefined) {
+      parts.push(`proposal ${proposal.id}`);
+    }
+
     const verification = context.data.get("verification") as GateRun | undefined;
     if (verification !== undefined) {
-      parts.push(
-        verification.failed === 0 ? "gates green" : "gates red",
-      );
+      parts.push(verification.failed === 0 ? "gates green" : "gates red");
     }
 
     return {
@@ -190,14 +380,31 @@ export const summarizeStep: Step = {
 };
 
 /**
- * The stages available without a model. Milestone 9 splices design and
- * implement between `preflight` and `verify`.
+ * `orch next`: determine the milestone and prepare the work. Read only, apart
+ * from the run log. It ends at a plan, deliberately, so that the design can be
+ * read and argued with before anything is written.
  */
-export const BUILTIN_WORKFLOW: readonly Step[] = [
+export const PREPARE_WORKFLOW: readonly Step[] = [
   understandStep,
   analyzeStep,
   preflightStep,
   baselineStep,
+  planStep,
+  summarizeStep,
+];
+
+/**
+ * `orch milestone`: the full loop. Stops at a staged proposal unless the
+ * operator asked for it to be applied on this invocation.
+ */
+export const MILESTONE_WORKFLOW: readonly Step[] = [
+  understandStep,
+  analyzeStep,
+  preflightStep,
+  baselineStep,
+  planStep,
+  implementStep,
+  applyStep,
   verifyStep,
   summarizeStep,
 ];

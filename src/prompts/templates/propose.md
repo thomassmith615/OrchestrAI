@@ -1,3 +1,7 @@
+{{context}}
+
+---
+
 Implement the following task in this repository.
 
 ## Task
@@ -31,5 +35,3 @@ Rules for the blocks:
 - Emit the entire file contents, not an excerpt and not a patch.
 - Any explanation goes outside the blocks, before or after them. Keep it to a
   few sentences.
-
-{{context}}

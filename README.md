@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 8 of 12 is complete.
+Version 1 is under construction. Milestone 9 of 12 is complete.
 
 ## Requirements
 
@@ -53,18 +53,31 @@ Available today:
 | `orch propose <task>` | Stage a change for review. Writes nothing |
 | `orch propose apply` | Write a reviewed proposal and run the gates |
 | `orch roadmap` | Milestone progression, current one marked |
-| `orch milestone` | Run the workflow for the current milestone |
+| `orch next` | Plan the next milestone. Writes nothing |
+| `orch milestone` | Plan, then stage a change proposal for review |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`next`, `memory`, `history`, `plugins`, `dashboard`,
+The full planned surface (`memory`, `history`, `plugins`, `dashboard`,
 `update`) is
 specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
 one. Planned commands are not stubbed: help output lists only what works.
 
 Every command accepts `--json`, `--verbose`, `--quiet`, `--cwd <path>`, and
 `--set key=value`, and returns a documented exit code.
+
+## The loop
+
+```bash
+orch next                 # what is next, and how it should be approached
+orch milestone            # plan, then stage a change for review
+orch propose show         # read the diff
+orch milestone --apply    # or: write it and run the gates
+```
+
+Nothing reaches the working tree without a flag you typed on that invocation,
+and nothing is ever committed.
 
 ## Getting a repository ready
 

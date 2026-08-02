@@ -1,7 +1,11 @@
 export {
-  BUILTIN_WORKFLOW,
+  MILESTONE_WORKFLOW,
+  PREPARE_WORKFLOW,
   analyzeStep,
+  applyStep,
   baselineStep,
+  implementStep,
+  planStep,
   preflightStep,
   summarizeStep,
   understandStep,
@@ -24,8 +28,11 @@ export {
 } from "./run.js";
 export { produced } from "./steps.js";
 export type { Milestone, Roadmap } from "./roadmap.js";
-export type { ExecuteOptions, WorkflowRun } from "./run.js";
+export type { ExecuteOptions, WorkflowOutcome, WorkflowRun } from "./run.js";
 export type {
+  AiCall,
+  AiPort,
+  AiReply,
   Step,
   StepContext,
   StepOutcome,

@@ -44,7 +44,9 @@ function renderResponse(request: CompletionRequest): string {
     throw new ProviderError("mock", "request", "No messages supplied");
   }
 
-  if (last.content.includes("<<<FILE")) {
+  // Only the tail is inspected. Repository content in the packed context can
+  // mention the protocol; the instruction block is always last.
+  if (last.content.slice(-1200).includes("<<<FILE")) {
     return MOCK_PROPOSAL;
   }
 

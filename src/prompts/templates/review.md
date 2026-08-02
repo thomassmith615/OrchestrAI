@@ -1,3 +1,7 @@
+{{context}}
+
+---
+
 Produce an engineering summary of this repository for a human reviewer.
 
 Cover, in this order, and keep the whole thing under 600 words:
@@ -11,5 +15,3 @@ Cover, in this order, and keep the whole thing under 600 words:
 
 Ground every claim in a file you were shown. Where the context is incomplete,
 say what you would need to see rather than guessing.
-
-{{context}}

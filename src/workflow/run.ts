@@ -37,9 +37,18 @@ export interface ExecuteOptions {
   readonly runId: string;
 }
 
+export interface WorkflowOutcome {
+  readonly run: WorkflowRun;
+  /**
+   * Values produced by the steps. Kept out of the run log, which stays a
+   * compact record of what happened rather than a copy of every output.
+   */
+  readonly data: ReadonlyMap<string, unknown>;
+}
+
 export async function executeWorkflow(
   options: ExecuteOptions,
-): Promise<WorkflowRun> {
+): Promise<WorkflowOutcome> {
   const { context } = options;
   const startedAt = context.hosts.clock.now();
   const data = new Map<string, unknown>();
@@ -128,15 +137,18 @@ export async function executeWorkflow(
   }
 
   return {
-    id: options.runId,
-    milestoneId: context.milestone?.id ?? null,
-    milestoneTitle: context.milestone?.title ?? null,
-    startedAt,
-    durationMs: Math.max(0, context.hosts.clock.now() - startedAt),
-    dryRun: options.dryRun,
-    steps: results,
-    status: failedAt === null ? "ok" : "failed",
-    failedAt,
+    run: {
+      id: options.runId,
+      milestoneId: context.milestone?.id ?? null,
+      milestoneTitle: context.milestone?.title ?? null,
+      startedAt,
+      durationMs: Math.max(0, context.hosts.clock.now() - startedAt),
+      dryRun: options.dryRun,
+      steps: results,
+      status: failedAt === null ? "ok" : "failed",
+      failedAt,
+    },
+    data,
   };
 }
 

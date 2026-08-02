@@ -101,6 +101,9 @@ describe("milestoneCommand", () => {
       "analyze",
       "preflight",
       "baseline",
+      "plan",
+      "implement",
+      "apply",
       "verify",
       "summarize",
     ]);
@@ -157,12 +160,32 @@ describe("milestoneCommand", () => {
     ).toContain("already failing");
   });
 
-  it("skips verification when nothing changed", async () => {
-    const result = await milestoneCommand.execute(build().context);
+  it("stages the proposal and stops short of the working tree", async () => {
+    const { context, fs } = build();
 
+    const result = await milestoneCommand.execute(context);
+
+    expect(result.data.proposalId).not.toBeNull();
+    expect(fs.files.has("/repo/MOCK.md")).toBe(false);
+    expect(
+      result.data.run.steps.find((step) => step.name === "apply"),
+    ).toMatchObject({ status: "skipped", detail: "staged for review, not applied" });
     expect(
       result.data.run.steps.find((step) => step.name === "verify"),
-    ).toMatchObject({ status: "skipped", detail: "no change was made in this run" });
+    ).toMatchObject({ status: "skipped", detail: "nothing was applied in this run" });
+    expect(result.report.notes?.join(" ")).toContain("orch propose show");
+  });
+
+  it("applies and verifies when asked", async () => {
+    const { context, fs } = build({ apply: true });
+
+    const result = await milestoneCommand.execute(context);
+
+    expect(fs.files.get("/repo/MOCK.md")).toContain("Mock proposal");
+    expect(result.data.run.steps.find((step) => step.name === "apply")?.status).toBe(
+      "ok",
+    );
+    expect(result.data.run.status).toBe("ok");
   });
 
   it("fails when the roadmap has no pending milestone", async () => {

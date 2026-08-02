@@ -11,6 +11,7 @@ import { contextCommand } from "./commands/context.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { infoCommand } from "./commands/info.js";
 import { milestoneCommand } from "./commands/milestone.js";
+import { nextCommand } from "./commands/next.js";
 import { roadmapCommand } from "./commands/roadmap.js";
 import { initCommand } from "./commands/init.js";
 import {
@@ -35,6 +36,7 @@ export function createRegistry(): CommandRegistry {
   registry.register(infoCommand);
   registry.register(initCommand);
   registry.register(milestoneCommand);
+  registry.register(nextCommand);
   registry.register(roadmapCommand);
   registry.register(providerAddCommand);
   registry.register(proposeCommand);

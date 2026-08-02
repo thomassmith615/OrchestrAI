@@ -13,6 +13,7 @@ import { requireConfig, requireWorkspace } from "./command.js";
 import type { PackedContext } from "../context/index.js";
 import type { CompletionResult } from "../providers/index.js";
 import type { CommandContext } from "./command.js";
+import type { AiCall, AiPort, AiReply } from "../workflow/index.js";
 
 export interface AiRequest {
   /** Prompt id from the registry, rendered with `context` plus any extras. */
@@ -31,6 +32,36 @@ export interface AiOutcome {
 }
 
 export const DEFAULT_MAX_TOKENS = 8000;
+
+/**
+ * Adapter from the engine to the workflow's `AiPort`. The workflow declares
+ * what it needs from a model; this supplies it without the workflow ever
+ * seeing a provider or a command context.
+ */
+export function aiPort(
+  context: CommandContext,
+  defaults: { readonly maxTokens?: number } = {},
+): AiPort {
+  return async (call: AiCall): Promise<AiReply> => {
+    const outcome = await completeWithContext(context, {
+      promptId: call.promptId,
+      ...(call.variables === undefined ? {} : { variables: call.variables }),
+      ...(call.focus === undefined ? {} : { focus: call.focus }),
+      ...(call.maxTokens ?? defaults.maxTokens
+        ? { maxTokens: call.maxTokens ?? defaults.maxTokens ?? DEFAULT_MAX_TOKENS }
+        : {}),
+    });
+
+    return {
+      text: outcome.result.text,
+      provider: outcome.result.provider,
+      model: outcome.result.model,
+      promptRef: outcome.promptRef,
+      contextTokens: outcome.packed.tokens,
+      usage: outcome.result.usage,
+    };
+  };
+}
 
 export async function completeWithContext(
   context: CommandContext,

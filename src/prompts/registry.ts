@@ -41,6 +41,12 @@ export const PROMPTS: readonly PromptDefinition[] = [
     description: "Engineering summary written for a human reviewer",
   },
   {
+    id: "plan",
+    version: 1,
+    file: "plan.md",
+    description: "Design an approach for a milestone without implementing it",
+  },
+  {
     id: "propose",
     version: 1,
     file: "propose.md",
