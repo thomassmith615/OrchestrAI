@@ -7,6 +7,19 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 5: git integration and verification gates.
+  - Git state via porcelain v2: branch, detached head, staged, unstaged and
+    untracked counts, ahead and behind, and head commit metadata. Diff reading
+    for Milestone 7. Nothing here mutates the repository.
+  - Gate runner that executes the detected build, typecheck, lint, and test
+    commands with per-gate timeouts and structured verdicts.
+  - Gate results persisted to `.orchestrai/gates.json`, with partial runs
+    merging rather than replacing. See ADR 0008.
+  - `orch build`, `orch test` (with `--all` and `--timeout`), and
+    `orch status --verify`. Gate failures exit 3.
+  - Exit codes on the process host, plus process timeouts and an injectable
+    clock.
+
 - Milestone 4: repository scanner and toolchain fingerprint.
   - Filesystem walk with gitignore evaluation, including nested ignore files,
     negation, anchoring, and directory-only patterns. Ignored directories are

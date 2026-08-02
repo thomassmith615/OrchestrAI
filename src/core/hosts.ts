@@ -34,13 +34,31 @@ export interface FileSystemHost {
 
 export interface ProcessResult {
   readonly ok: boolean;
+  /** Exit code, or null when the process was killed or never started. */
+  readonly code: number | null;
   readonly stdout: string;
   readonly stderr: string;
+  readonly timedOut: boolean;
+}
+
+export interface ProcessOptions {
+  /** Kill the process after this many milliseconds. */
+  readonly timeoutMs?: number;
 }
 
 export interface ProcessHost {
   /** Runs a command without a shell. Never throws on a non-zero exit. */
-  run(command: string, args: readonly string[], cwd: string): ProcessResult;
+  run(
+    command: string,
+    args: readonly string[],
+    cwd: string,
+    options?: ProcessOptions,
+  ): ProcessResult;
+}
+
+/** Injectable clock, so durations and timestamps are deterministic in tests. */
+export interface ClockHost {
+  now(): number;
 }
 
 export type EnvHost = Readonly<Record<string, string | undefined>>;
@@ -69,6 +87,7 @@ export interface Hosts {
   readonly proc: ProcessHost;
   readonly env: EnvHost;
   readonly http: HttpHost;
+  readonly clock: ClockHost;
 }
 
 export const nodeFileSystem: FileSystemHost = {
@@ -100,19 +119,36 @@ export const nodeFileSystem: FileSystemHost = {
 };
 
 export const nodeProcessHost: ProcessHost = {
-  run(command: string, args: readonly string[], cwd: string): ProcessResult {
+  run(
+    command: string,
+    args: readonly string[],
+    cwd: string,
+    options: ProcessOptions = {},
+  ): ProcessResult {
     const result = spawnSync(command, [...args], {
       cwd,
       encoding: "utf8",
       shell: false,
+      maxBuffer: 32 * 1024 * 1024,
+      ...(options.timeoutMs === undefined ? {} : { timeout: options.timeoutMs }),
     });
+
+    const timedOut =
+      result.error !== undefined &&
+      (result.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
 
     return {
       ok: result.error === undefined && result.status === 0,
+      code: result.status,
       stdout: result.stdout ?? "",
       stderr: result.stderr ?? "",
+      timedOut,
     };
   },
+};
+
+export const nodeClock: ClockHost = {
+  now: (): number => Date.now(),
 };
 
 async function* decodeLines(
@@ -164,5 +200,6 @@ export function nodeHosts(): Hosts {
     proc: nodeProcessHost,
     env: process.env,
     http: nodeHttpHost,
+    clock: nodeClock,
   };
 }

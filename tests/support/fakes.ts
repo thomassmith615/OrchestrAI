@@ -5,6 +5,7 @@
 import { dirname } from "node:path";
 import { createLogger } from "../../src/core/logger.js";
 import type {
+  ClockHost,
   DirEntry,
   EnvHost,
   FileSystemHost,
@@ -95,13 +96,66 @@ export function fakeFileSystem(
   };
 }
 
-export function fakeProcess(result: Partial<ProcessResult> = {}): ProcessHost {
+export interface FakeProcessCall {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly cwd: string;
+}
+
+export interface FakeProcess extends ProcessHost {
+  readonly calls: FakeProcessCall[];
+}
+
+/**
+ * Serves canned results. `responses` is keyed by the full command line so a
+ * single fake can answer several different invocations.
+ */
+export function fakeProcess(
+  result: Partial<ProcessResult> = {},
+  responses: Readonly<Record<string, Partial<ProcessResult>>> = {},
+): FakeProcess {
+  const calls: FakeProcessCall[] = [];
+
+  const build = (partial: Partial<ProcessResult>): ProcessResult => ({
+    ok: partial.ok ?? (partial.code ?? 0) === 0,
+    code: partial.code ?? (partial.ok === false ? 1 : 0),
+    stdout: partial.stdout ?? "",
+    stderr: partial.stderr ?? "",
+    timedOut: partial.timedOut ?? false,
+  });
+
   return {
-    run: (): ProcessResult => ({
-      ok: result.ok ?? true,
-      stdout: result.stdout ?? "git version 2.44.0",
-      stderr: result.stderr ?? "",
-    }),
+    calls,
+    run: (
+      command: string,
+      args: readonly string[],
+      cwd: string,
+    ): ProcessResult => {
+      calls.push({ command, args, cwd });
+      const line = [command, ...args].join(" ");
+
+      for (const [pattern, response] of Object.entries(responses)) {
+        if (line === pattern || line.startsWith(`${pattern} `)) {
+          return build(response);
+        }
+      }
+
+      return build(
+        Object.keys(result).length > 0
+          ? result
+          : { stdout: "git version 2.44.0" },
+      );
+    },
+  };
+}
+
+export function fakeClock(start = 1_000): ClockHost {
+  let current = start;
+  return {
+    now: (): number => {
+      current += 5;
+      return current;
+    },
   };
 }
 
@@ -156,6 +210,7 @@ export function fakeHosts(
     proc?: ProcessHost;
     env?: EnvHost;
     http?: HttpHost;
+    clock?: ClockHost;
   } = {},
 ): Hosts {
   return {
@@ -163,6 +218,7 @@ export function fakeHosts(
     proc: overrides.proc ?? fakeProcess(),
     env: overrides.env ?? {},
     http: overrides.http ?? fakeHttp(),
+    clock: overrides.clock ?? fakeClock(),
   };
 }
 

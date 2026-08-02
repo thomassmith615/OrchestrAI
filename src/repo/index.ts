@@ -2,6 +2,12 @@ export { scanRepository, DEFAULT_MAX_FILES, DEFAULT_MAX_FILE_BYTES } from "./sca
 export { detectToolchain, formatCommand } from "./toolchain.js";
 export { detectLanguage, isBinaryName } from "./languages.js";
 export {
+  CLEAN_STATUS,
+  describeGitStatus,
+  readDiff,
+  readGitStatus,
+} from "./git.js";
+export {
   configScope,
   isIgnored,
   parseIgnoreFile,
@@ -15,3 +21,4 @@ export type {
 } from "./scan.js";
 export type { Ecosystem, ToolCommand, Toolchain } from "./toolchain.js";
 export type { IgnoreRule, IgnoreScope } from "./ignore.js";
+export type { DiffOptions, GitCommit, GitStatus } from "./git.js";

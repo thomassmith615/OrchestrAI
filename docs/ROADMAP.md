@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 4 complete. Next up: Milestone 5.
+**Current position:** Milestone 5 complete. Next up: Milestone 6.
 
 ---
 
@@ -51,7 +51,7 @@ milestone, and implement the next unchecked one.
   Delivers `orch status` in its inventory form: what the repository contains
   and how it builds. M5 adds git branch state and the pass or fail verdicts.
 
-- [ ] **M5. Git integration and verification gates**
+- [x] **M5. Git integration and verification gates**
   Status, diff, branch, and commit metadata. Dirty tree detection as a
   precondition for automation. Then the Definition of Done as code: run the
   detected build, typecheck, lint, and test commands from M4, capture
@@ -140,3 +140,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 2 complete: configuration layering with source tracking, workspace resolution, declared command preconditions, `orch init`, `orch doctor`, `orch config`. |
 | 2026-08-02 | Milestone 3 complete: provider interface and registry, deterministic mock provider, Anthropic provider with streaming and usage accounting, `orch providers`, `orch provider add`. |
 | 2026-08-02 | Milestone 4 complete: repository scanner with gitignore evaluation, language detection, toolchain fingerprint, `orch status`. `orch status` moved forward from M5 so the milestone has an observable surface. |
+| 2026-08-02 | Milestone 5 complete: git status, commit metadata and diff reading, gate runner with timeouts, persisted gate results, `orch build`, `orch test`, `orch status --verify`. Gate failures exit 3. |

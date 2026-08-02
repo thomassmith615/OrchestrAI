@@ -38,8 +38,8 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch providers` | Display available AI providers, `--verify` for a live check | M3, available |
 | `orch provider add <name>` | Select and configure an AI provider | M3, available |
 | `orch status` | Repository inventory, toolchain, and provider | M4, available |
-| `orch build` | Execute the configured build pipeline | M5 |
-| `orch test` | Execute all configured validation | M5 |
+| `orch build` | Execute the configured build pipeline | M5, available |
+| `orch test` | Execute all configured validation | M5, available |
 | `orch review` | Generate an engineering summary for human review | M7 |
 | `orch roadmap` | Display the roadmap and milestone progression | M8 |
 | `orch milestone` | Execute the current milestone workflow | M8 |
@@ -118,6 +118,35 @@ command for.
 
 Supported ecosystems: node (npm, pnpm, yarn, bun), java (maven, gradle),
 python (poetry, uv, pip), go, rust.
+
+## Verification gates
+
+```bash
+orch build              # the build gate alone
+orch test               # typecheck, lint, and test
+orch test --all         # the full Definition of Done, build included
+orch status             # last recorded verdicts, with their age
+orch status --verify    # run every gate now
+orch test --timeout 120 # per-gate timeout in seconds, default 600
+```
+
+Commands come from the Milestone 4 toolchain fingerprint, so this works on a
+Maven or Cargo project without configuration. A gate with no detected command
+is skipped, not guessed at, and does not count as a pass.
+
+Results persist to `.orchestrai/gates.json`. Partial runs merge, so `orch build`
+does not erase the last test verdict, and `orch status` shows how old each
+verdict is.
+
+Failing gates exit **3**, which is what CI should branch on:
+
+```bash
+orch test || case $? in
+  3) echo "repository failed validation" ;;
+  4) echo "nothing configured to run" ;;
+  *) echo "orchestrai itself failed" ;;
+esac
+```
 
 ## Preconditions
 

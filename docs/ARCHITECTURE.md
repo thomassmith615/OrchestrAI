@@ -65,10 +65,11 @@ Providers know nothing about workflows. Surfaces are thin.
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
 | `src/prompts` | Versioned, testable prompt templates. Never inline strings. | M6 |
-| `src/repo` | Scanning, ignore rules, language and toolchain detection. Git access lands M5. | M4 |
+| `src/repo` | Scanning, ignore rules, language and toolchain detection, git state. | M4, M5 |
 | `src/context` | Selection and budgeting of what a model is allowed to see. | M6 |
 | `src/memory` | Durable project knowledge in `.orchestrai/`. | M10 |
-| `src/workflow` | Milestone state, step execution, verification gates. | M5 |
+| `src/gates` | Gate execution against the detected toolchain, and result persistence. | M5 |
+| `src/workflow` | Milestone state and step execution. | M8 |
 | `src/plugins` | Third party extension points. | M12 |
 | `src/dashboard` | Read only local web surface. | M12 |
 

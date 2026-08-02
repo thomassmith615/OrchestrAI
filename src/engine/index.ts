@@ -5,6 +5,7 @@
  * module into individual command implementations.
  */
 import { CommandRegistry } from "./registry.js";
+import { buildCommand, testCommand } from "./commands/gates.js";
 import { configCommand } from "./commands/config.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { infoCommand } from "./commands/info.js";
@@ -16,6 +17,7 @@ import { statusCommand } from "./commands/status.js";
 export function createRegistry(): CommandRegistry {
   const registry = new CommandRegistry();
 
+  registry.register(buildCommand);
   registry.register(configCommand);
   registry.register(doctorCommand);
   registry.register(infoCommand);
@@ -23,6 +25,7 @@ export function createRegistry(): CommandRegistry {
   registry.register(providerAddCommand);
   registry.register(providersCommand);
   registry.register(statusCommand);
+  registry.register(testCommand);
 
   return registry;
 }

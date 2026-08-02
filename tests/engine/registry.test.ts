@@ -40,6 +40,7 @@ describe("CommandRegistry", () => {
 describe("createRegistry", () => {
   it("registers the current command surface in stable order", () => {
     expect(createRegistry().list().map((command) => command.name)).toEqual([
+      "build",
       "config",
       "doctor",
       "info",
@@ -47,6 +48,7 @@ describe("createRegistry", () => {
       "provider add",
       "providers",
       "status",
+      "test",
     ]);
   });
 });
