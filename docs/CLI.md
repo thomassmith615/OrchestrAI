@@ -35,6 +35,7 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch init` | Initialize Orchestraᵢ inside an existing repository | M2, available |
 | `orch doctor` | Run diagnostic checks on the repository configuration | M2, available |
 | `orch config` | Inspect resolved configuration and its sources | M2, available |
+| `orch context` | Show what would be sent to a provider, and what would be dropped | M6, available |
 | `orch providers` | Display available AI providers, `--verify` for a live check | M3, available |
 | `orch provider add <name>` | Select and configure an AI provider | M3, available |
 | `orch status` | Repository inventory, toolchain, and provider | M4, available |
@@ -50,8 +51,9 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch dashboard` | Launch the optional local web dashboard | M12 |
 | `orch update` | Update Orchestraᵢ | M12 |
 
-`orch config` is an addition to the original surface, on the grounds that
-configuration precedence is impossible to debug without it.
+`orch config` and `orch context` are additions to the original surface, on the
+same grounds: configuration precedence and context packing are both invisible
+without a way to inspect them.
 
 ## Global flags
 
@@ -147,6 +149,24 @@ orch test || case $? in
   *) echo "orchestrai itself failed" ;;
 esac
 ```
+
+## Context
+
+```bash
+orch context                      # what would be sent, and what would not
+orch context auth,login           # prioritize files matching these terms
+orch context --dropped            # list what fell outside the budget
+orch context --print              # print the assembled context itself
+orch context --prompt analyze     # render a named prompt around it
+```
+
+Nothing here calls a provider. The budget comes from the `contextBudget`
+setting; 25 percent is reserved for the system prompt and the response, so a
+100,000 token budget packs at most 75,000.
+
+Every included file lists why it was chosen. Files too large for the remaining
+budget are skipped, never truncated, and appear under `--dropped` with their
+token cost.
 
 ## Preconditions
 

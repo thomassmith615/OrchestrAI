@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 5 complete. Next up: Milestone 6.
+**Current position:** Milestone 6 complete. Next up: Milestone 7.
 
 ---
 
@@ -60,12 +60,13 @@ milestone, and implement the next unchecked one.
   Delivers `orch build`, `orch test`, and the verdict rows of `orch status`.
   Gate failures exit 3.
 
-- [ ] **M6. Context packer and prompt system**
+- [x] **M6. Context packer and prompt system**
   Relevance ranking and token budgeting, reporting what was included, what was
   dropped, and why. Versioned prompt templates as files with typed
   interpolation, a registry, and snapshot tests. No prompt strings inline in
   logic. Highest risk milestone in the roadmap: everything downstream is only
-  as good as what reaches the context window. No user facing command.
+  as good as what reaches the context window. Delivers `orch context`, an
+  inspection surface for what would be sent and what would be dropped.
 
 - [ ] **M7. `orchestrai analyze` and change proposals**
   A repository health and architecture report combining scanner, fingerprint,
@@ -141,3 +142,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 3 complete: provider interface and registry, deterministic mock provider, Anthropic provider with streaming and usage accounting, `orch providers`, `orch provider add`. |
 | 2026-08-02 | Milestone 4 complete: repository scanner with gitignore evaluation, language detection, toolchain fingerprint, `orch status`. `orch status` moved forward from M5 so the milestone has an observable surface. |
 | 2026-08-02 | Milestone 5 complete: git status, commit metadata and diff reading, gate runner with timeouts, persisted gate results, `orch build`, `orch test`, `orch status --verify`. Gate failures exit 3. |
+| 2026-08-02 | Milestone 6 complete: explainable relevance ranking, token budgeting with reserved headroom, file-based versioned prompts, `orch context`. |

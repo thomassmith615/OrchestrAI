@@ -7,6 +7,7 @@
 import { CommandRegistry } from "./registry.js";
 import { buildCommand, testCommand } from "./commands/gates.js";
 import { configCommand } from "./commands/config.js";
+import { contextCommand } from "./commands/context.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { infoCommand } from "./commands/info.js";
 import { initCommand } from "./commands/init.js";
@@ -19,6 +20,7 @@ export function createRegistry(): CommandRegistry {
 
   registry.register(buildCommand);
   registry.register(configCommand);
+  registry.register(contextCommand);
   registry.register(doctorCommand);
   registry.register(infoCommand);
   registry.register(initCommand);

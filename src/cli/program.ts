@@ -82,13 +82,18 @@ function buildCommand(
   command.action(async (...invocation: unknown[]): Promise<void> => {
     enforceRequirements(definition.requires, options.base);
 
-    const positional = invocation.slice(0, definition.args?.length ?? 0);
+    // Omitted optional arguments arrive as undefined; they must not become
+    // the string "undefined" once they reach a command. Commander only ever
+    // produces strings for declared positionals.
+    const positional = invocation
+      .slice(0, definition.args?.length ?? 0)
+      .filter((value): value is string => typeof value === "string");
 
     const result = await definition.execute({
       cwd: options.base.cwd,
       logger: options.logger,
       options: command.opts(),
-      args: positional.map((value) => String(value)),
+      args: positional,
       hosts: options.base.hosts,
       workspace: options.base.workspace,
       config: options.base.config,

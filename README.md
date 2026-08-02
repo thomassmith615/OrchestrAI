@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 5 of 12 is complete.
+Version 1 is under construction. Milestone 6 of 12 is complete.
 
 ## Requirements
 
@@ -39,6 +39,7 @@ orch info
 | `orch providers` | List AI providers, `--verify` for a live check |
 | `orch provider add <name>` | Select and configure a provider |
 | `orch status` | Repository, git state, toolchain, provider, and gate verdicts |
+| `orch context` | Show what would be sent to a provider, and what would not |
 | `orch build` | Run the detected build command |
 | `orch test` | Run all detected validation (typecheck, lint, test) |
 | `orch info` | Report the running environment |
@@ -91,6 +92,8 @@ src/core/     errors and exit codes, logging, injectable hosts, config, workspac
 src/providers/  one file per provider behind a single interface, plus registry
 src/repo/     scanner, gitignore evaluation, toolchain detection, git state
 src/gates/    gate execution against the detected toolchain, result persistence
+src/context/  relevance ranking, token budgeting, context assembly
+src/prompts/  versioned .md templates, typed interpolation, registry
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

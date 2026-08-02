@@ -7,6 +7,23 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 6: context packer and prompt system.
+  - Explainable relevance ranking with no embeddings or model call. Every
+    ranked file carries the reasons that produced its score.
+  - Token budgeting with 25 percent headroom reserved for the system prompt and
+    the response. Files that do not fit are skipped, never truncated, and are
+    reported with their token cost. See ADR 0009.
+  - Recently changed files boosted using the git log.
+  - Versioned prompt templates as `.md` files with typed `{{variable}}`
+    interpolation. Missing and unused variables are both errors.
+  - `contextBudget` configuration setting, and numeric config fields.
+  - `orch context`, an inspection surface that makes no network calls.
+
+### Fixed
+
+- Omitted optional command arguments no longer arrive as the string
+  `"undefined"`.
+
 - Milestone 5: git integration and verification gates.
   - Git state via porcelain v2: branch, detached head, staged, unstaged and
     untracked counts, ahead and behind, and head commit metadata. Diff reading

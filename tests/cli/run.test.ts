@@ -198,4 +198,22 @@ describe("run", () => {
       sources: { provider: "flag" },
     });
   });
+
+  it("omits optional arguments instead of passing the string undefined", async () => {
+    let received: readonly string[] | undefined;
+    const registry = new CommandRegistry().register({
+      name: "optional",
+      summary: "Takes an optional argument",
+      args: [{ name: "focus", description: "Optional", required: false }],
+      execute: (context) => {
+        received = context.args;
+        return Promise.resolve(ok({}, { fields: [] }));
+      },
+    });
+    const { invoke } = harness(registry);
+
+    await invoke("optional");
+
+    expect(received).toEqual([]);
+  });
 });

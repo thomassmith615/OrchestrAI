@@ -19,10 +19,10 @@ function displayValue(value: ConfigValue): string {
   if (value === null) {
     return "null";
   }
-  if (typeof value !== "string") {
+  if (Array.isArray(value)) {
     return value.length === 0 ? "[]" : value.join(", ");
   }
-  return value;
+  return String(value);
 }
 
 export const configCommand: CommandDefinition<ConfigData> = {

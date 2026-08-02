@@ -42,6 +42,7 @@ describe("createRegistry", () => {
     expect(createRegistry().list().map((command) => command.name)).toEqual([
       "build",
       "config",
+      "context",
       "doctor",
       "info",
       "init",

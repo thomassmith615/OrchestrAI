@@ -72,6 +72,13 @@ function coerceStructured(
       }
       return value;
     }
+
+    case "number": {
+      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+        throw new ConfigurationError(`${key} must be a positive number`);
+      }
+      return value;
+    }
   }
 }
 
@@ -86,6 +93,9 @@ function coerceText(key: ConfigKey, spec: FieldSpec, raw: string): unknown {
         .split(",")
         .map((entry) => entry.trim())
         .filter((entry) => entry.length > 0);
+
+    case "number":
+      return coerceStructured(key, spec, Number.parseInt(raw, 10));
 
     default:
       return coerceStructured(key, spec, raw);

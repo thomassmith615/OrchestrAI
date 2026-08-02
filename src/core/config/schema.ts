@@ -19,11 +19,18 @@ export interface ConfigValues {
   readonly logLevel: LogLevel;
   /** Additional ignore patterns applied on top of .gitignore. */
   readonly ignore: readonly string[];
+  /** Token budget for assembled context sent to a provider. */
+  readonly contextBudget: number;
 }
 
 export type ConfigKey = keyof ConfigValues;
 
-export type FieldKind = "string" | "nullableString" | "enum" | "stringArray";
+export type FieldKind =
+  | "string"
+  | "nullableString"
+  | "enum"
+  | "stringArray"
+  | "number";
 
 export interface FieldSpec {
   readonly kind: FieldKind;
@@ -61,6 +68,11 @@ export const CONFIG_FIELDS: Readonly<Record<ConfigKey, FieldSpec>> = {
     env: "ORCH_IGNORE",
     description: "Extra ignore patterns, comma separated in the environment",
   },
+  contextBudget: {
+    kind: "number",
+    env: "ORCH_CONTEXT_BUDGET",
+    description: "Token budget for assembled context",
+  },
 };
 
 export const CONFIG_KEYS = Object.keys(CONFIG_FIELDS) as readonly ConfigKey[];
@@ -71,6 +83,7 @@ export const DEFAULT_CONFIG: ConfigValues = {
   roadmapPath: "docs/ROADMAP.md",
   logLevel: "info",
   ignore: [],
+  contextBudget: 100_000,
 };
 
 export function isConfigKey(value: string): value is ConfigKey {
