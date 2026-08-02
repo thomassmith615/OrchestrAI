@@ -67,7 +67,7 @@ Providers know nothing about workflows. Surfaces are thin.
 | `src/prompts` | Versioned `.md` templates, typed interpolation, registry. | M6 |
 | `src/repo` | Scanning, ignore rules, language and toolchain detection, git state. | M4, M5 |
 | `src/context` | Ranking, token budgeting, and assembly of what a model sees. | M6 |
-| `src/memory` | Durable project knowledge in `.orchestrai/`. | M10 |
+| `src/memory` | Append-only records and ranked retrieval behind one interface. | M10 |
 | `src/gates` | Gate execution against the detected toolchain, and result persistence. | M5 |
 | `src/proposals` | Change parsing, staging, diffing, and application. The write path. | M7 |
 | `src/workflow` | Roadmap parsing, step contract, execution, and run log. | M8 |

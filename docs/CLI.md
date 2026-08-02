@@ -51,9 +51,9 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch review` | Generate an engineering summary for human review | M7, available |
 | `orch roadmap` | Display the roadmap and milestone progression | M8, available |
 | `orch milestone` | Execute the current milestone workflow | M8, available |
-| `orch next` | Determine the next milestone and prepare the workflow | M9, available |
-| `orch memory` | Inspect project memory | M10 |
-| `orch history` | Display engineering history and completed milestones | M10 |
+| `orch next` | Determine the next milestone and prepare the workflow | M9 |
+| `orch memory` | Inspect project memory | M10, available |
+| `orch history` | Display engineering history and completed milestones | M10, available |
 | `orch plugins` | Manage Orchestraᵢ plugins | M12 |
 | `orch dashboard` | Launch the optional local web dashboard | M12 |
 | `orch update` | Update Orchestraᵢ | M12 |
@@ -222,21 +222,31 @@ The workflow runs the charter's development process as stages. It stops at the
 first failure and exits 3, recording the remaining stages as skipped. Runs are
 logged to `.orchestrai/runs/`.
 
+Stages available now: `understand`, `analyze`, `preflight`, `baseline`,
+`verify`, `summarize`. The baseline runs before any change, so a repository that
+is already red is reported as such rather than blamed on the run.
+
+## Project memory
+
 ```bash
-orch next                 # plan the next milestone. Writes nothing.
-orch milestone            # plan, then stage a proposal for review
-orch milestone --apply    # complete the loop: write it and verify
+orch memory add "Providers call REST, not SDKs" \
+  --kind decision --body "Injected HTTP makes streaming testable." --tags providers
+orch memory                       # most recent records
+orch memory "truncation budget"   # ranked search, with the reasons
+orch memory --kind constraint     # filter
+orch memory --full                # include bodies
+orch history                      # completed milestones and the run log
 ```
 
-`next` ends at a plan on purpose: a design is the cheapest thing to argue with.
-`milestone` uses that plan as agreed context and stages a proposal. Applying is
-opt in on each invocation, because the flag is the consent.
+Records live in `.orchestrai/memory/records.jsonl`, append only, one JSON object
+per line. Kinds: `decision`, `constraint`, `milestone`, `note`. A damaged line
+is reported with its line number and exits non-zero rather than being skipped.
 
-Stages: `understand`, `analyze`, `preflight`, `baseline`, `plan`, `implement`,
-`apply`, `verify`, `summarize`. The cheap gates run first, so a dirty tree stops
-the run before any tokens are spent. The baseline runs before any change, so a
-repository that is already red is reported as such rather than blamed on the
-run.
+Memory is recalled automatically into every provider call, budgeted alongside
+the files and capped at a third of the window. `orch context` shows what
+reached the model.
+
+`orch history` is the log of what was done; `orch memory` is the record of why.
 
 ## Preconditions
 

@@ -7,24 +7,23 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
-- Milestone 9: end to end orchestration.
-  - `orch next`: determines the next milestone and produces a plan. Writes
-    nothing but a run log.
-  - `orch milestone` now runs the full pipeline: plan, implement, and stage a
-    proposal. `--apply` writes it and runs the verification gates.
-  - `plan`, `implement`, and `apply` stages, plus an `AiPort` the workflow
-    declares for itself so it never imports a provider or a surface. See
-    ADR 0012.
-  - `executeWorkflow` returns produced values alongside the run, keeping large
-    outputs out of the run log.
+- Milestone 10: project memory.
+  - Append-only records in `.orchestrai/memory/records.jsonl`, one JSON object
+    per line, with kind, tags, originating milestone, and commit. Damaged lines
+    are reported with line numbers rather than skipped. See ADR 0013.
+  - Keyword retrieval behind a `Retriever` interface: inverse document
+    frequency with title, tag, recency, and record-kind weighting. Every result
+    explains itself. An embedding backend implements the same interface.
+  - Recall wired into every provider call, budgeted alongside files and capped
+    at a third of the context window.
+  - A `record` stage so each milestone run leaves knowledge behind.
+  - `orch memory`, `orch memory add`, and `orch history`.
 
-### Changed
+### Fixed
 
-- Prompt templates place the packed context first and instructions last, so
-  generation follows the rules and a repository containing the change protocol
-  is not mistaken for a request to use it.
-- The mock provider inspects only the tail of a request when deciding whether
-  change blocks were asked for.
+- When a command group and its sub-command declared the same flag, commander
+  assigned the value to the group, so `orch memory add --kind` was ignored.
+  Commands now read options merged across the ancestor chain.
 
 - Milestone 8: workflow engine.
   - Roadmap parsing from the `roadmapPath` setting. Tolerant by design:

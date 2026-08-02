@@ -1,7 +1,8 @@
 {
-  "provider": "anthropic",
+  "provider": "mock",
   "model": null,
   "roadmapPath": "docs/ROADMAP.md",
   "logLevel": "info",
-  "ignore": []
+  "ignore": [],
+  "contextBudget": 100000
 }
