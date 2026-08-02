@@ -10,8 +10,15 @@ export {
   CONFIG_FIELDS,
   CONFIG_KEYS,
   DEFAULT_CONFIG,
+  ENGINEERING_CONFIG_TABLE,
   fieldSpec,
   isConfigKey,
 } from "./schema.js";
 export type { ConfigSource, ResolveConfigOptions, ResolvedConfig } from "./resolve.js";
-export type { ConfigKey, ConfigValues, FieldKind, FieldSpec } from "./schema.js";
+export type {
+  ConfigFieldTable,
+  ConfigKey,
+  ConfigValues,
+  FieldKind,
+  FieldSpec,
+} from "./schema.js";

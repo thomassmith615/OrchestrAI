@@ -16,6 +16,9 @@ export {
   activateCapabilities,
   buildCapabilitiesCommand,
   CapabilityRegistry,
+  composeConfigSchemas,
+  namespacedFieldKey,
+  namespacedFieldKeys,
   prefixedCommandName,
 } from "./runtime/index.js";
 export {
@@ -40,6 +43,7 @@ export {
   CONFIG_KEYS,
   ConfigurationError,
   DEFAULT_CONFIG,
+  ENGINEERING_CONFIG_TABLE,
   isConfigKey,
   parseOverrides,
   resolveConfig,
@@ -84,7 +88,9 @@ export type {
   Capability,
   CapabilitiesData,
   CapabilityActivation,
+  CapabilityConfigSchema,
   CapabilityFailure,
+  ComposedConfigSchema,
 } from "./runtime/index.js";
 export type { RuntimeAssembly } from "./capabilities/index.js";
 export type { BaseContext } from "./cli/context.js";
@@ -92,6 +98,7 @@ export type { ProgramOptions } from "./cli/program.js";
 export type { RunOptions } from "./cli/run.js";
 export type { GlobalFlags } from "./cli/globals.js";
 export type {
+  ConfigFieldTable,
   ConfigKey,
   ConfigSource,
   ConfigValues,

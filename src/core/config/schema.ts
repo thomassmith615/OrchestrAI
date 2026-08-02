@@ -133,3 +133,26 @@ export function isConfigKey(value: string): value is ConfigKey {
 export function fieldSpec(key: ConfigKey): FieldSpec {
   return CONFIG_FIELDS[key];
 }
+
+/**
+ * A namespace's worth of configuration fields: specs and defaults, keyed
+ * without any namespace prefix applied. `resolveConfig` still resolves
+ * against `CONFIG_FIELDS`/`DEFAULT_CONFIG` directly; this is the shape a
+ * capability declares its own fields in. See `src/runtime/config.ts` and
+ * ADR 0018.
+ */
+export interface ConfigFieldTable {
+  readonly fields: Readonly<Record<string, FieldSpec>>;
+  readonly defaults: Readonly<Record<string, unknown>>;
+}
+
+/** Engineering's own field table, packaged for composition alongside any
+ *  other capability's. Identical data to `CONFIG_FIELDS`/`DEFAULT_CONFIG`. */
+export const ENGINEERING_CONFIG_TABLE: ConfigFieldTable = {
+  fields: CONFIG_FIELDS,
+  // `ConfigValues` is a plain interface, so unlike `CONFIG_FIELDS` (a mapped
+  // `Record<ConfigKey, _>`) it has no implicit string index signature. The
+  // cast only widens a known-closed shape to an open one; every value is
+  // still exactly what `DEFAULT_CONFIG` declares.
+  defaults: DEFAULT_CONFIG as unknown as Readonly<Record<string, unknown>>,
+};

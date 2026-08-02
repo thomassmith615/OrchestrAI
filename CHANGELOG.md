@@ -10,6 +10,22 @@ Capability. See `docs/ROADMAP-V2.md`.
 
 ### Added
 
+- Milestone V2-3: namespaced configuration.
+  - `Capability.configSchema?()`: an optional method a capability uses to
+    declare its own configuration fields (specs and defaults, unprefixed,
+    under its own namespace), mirroring `commands()`.
+  - `composeConfigSchemas` (`src/runtime/config.ts`): merges every
+    capability's fields into one flat table, namespacing each with a dot
+    (`home.token`) the way commands are namespaced with a space, and
+    rejecting a same-namespace field collision.
+  - Engineering declares an empty config namespace; its composed table is
+    `CONFIG_FIELDS`/`DEFAULT_CONFIG`, byte for byte — the same
+    backwards-compatibility concession as its empty command prefix.
+  - `resolveConfig` and `orch config` are deliberately not wired to a
+    composed table yet: there is no second capability with a real field to
+    resolve, so that integration is a named revisit trigger rather than
+    speculative work. See ADR 0018.
+
 - Milestone V2-2: scope.
   - `Scope` (`src/core/workspace.ts`): repository scope, unchanged from
     Version 1, or user scope, rooted at `~/.orchestrai` with no repository

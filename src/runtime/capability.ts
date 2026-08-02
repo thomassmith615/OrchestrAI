@@ -10,6 +10,18 @@
  * See ADR 0016.
  */
 import type { CommandDefinition } from "../engine/command.js";
+import type { FieldSpec } from "../core/config/schema.js";
+
+/**
+ * Configuration fields a capability contributes, namespaced under its own
+ * name. Empty string composes at the root — Engineering's backwards
+ * compatibility concession, same as its empty `commandPrefix`. See ADR 0018.
+ */
+export interface CapabilityConfigSchema {
+  readonly namespace: string;
+  readonly fields: Readonly<Record<string, FieldSpec>>;
+  readonly defaults: Readonly<Record<string, unknown>>;
+}
 
 export interface Capability {
   /** Stable identifier, e.g. `engineering`. Never shown to a user directly. */
@@ -27,6 +39,11 @@ export interface Capability {
   readonly commandPrefix: string;
   /** Commands this capability contributes to the registry. */
   commands(): readonly CommandDefinition[];
+  /**
+   * Configuration fields this capability contributes, if any. A capability
+   * with nothing to configure omits this entirely.
+   */
+  configSchema?(): CapabilityConfigSchema;
 }
 
 /**

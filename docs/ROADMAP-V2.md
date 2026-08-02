@@ -13,7 +13,7 @@ implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** V2-2 complete.
+**Current position:** V2-3 complete.
 
 **The phase's Definition of Done** (not yet reached): the runtime hosts two
 capabilities; Engineering is one; a trivial placeholder is the other; the
@@ -49,14 +49,18 @@ anywhere; and at no point does the runtime branch on a capability's identity.
   resolved `scope` field; `orch info` and `orch doctor` report it. See
   ADR 0017.
 
-- [ ] **V2-3. Namespaced configuration**
-  Today `ConfigValues` is a fixed interface of eleven fields and
-  `CONFIG_FIELDS` is a closed table: a capability cannot add a setting
-  without editing core, and every capability shares one flat namespace. This
-  composes the field table instead — capabilities declare their own fields
-  under their own namespace — while reusing the existing layered resolver,
-  coercion, and per-field source tracking verbatim. Engineering keeps the
-  root namespace as its own backwards-compatibility concession.
+- [x] **V2-3. Namespaced configuration**
+  `Capability.configSchema?()` lets a capability declare its own fields
+  (specs and defaults, unprefixed), and `composeConfigSchemas` merges every
+  capability's into one flat table, namespaced with a dot the same way
+  commands are namespaced with a space, rejecting a same-namespace field
+  collision the way duplicate command registration already is. Engineering
+  keeps the root namespace as its own backwards-compatibility concession —
+  its declared table is `CONFIG_FIELDS`/`DEFAULT_CONFIG`, byte for byte.
+  `resolveConfig`, `ConfigValues`, and `orch config` are deliberately left
+  untouched: there is no second capability with a real field yet to justify
+  widening tested, load-bearing code, so that wiring is a named revisit
+  trigger rather than done speculatively. See ADR 0018.
 
 - [ ] **V2-4. Namespaced storage**
   Each capability gets a storage handle rooted at its own directory (under
@@ -86,3 +90,4 @@ anywhere; and at no point does the runtime branch on a capability's identity.
 | 2026-08-02 | Version 2 roadmap defined (6 milestones), continuing directly from the Version 1 1.0.0 release. |
 | 2026-08-02 | Milestone V2-1 complete: capability contract, registry, and activation in `src/runtime/`; Engineering declared as the first capability in `src/capabilities/engineering/`, with no implementation moved; `orch capabilities`. See ADR 0016. |
 | 2026-08-02 | Milestone V2-2 complete: `Scope` (repository or user) replaces the git-repository assumption in the command contract; `CommandRequirements.repository` replaced by `CommandRequirements.scope`, defaulting to repository; `orch info` and `orch doctor` report the active scope. See ADR 0017. |
+| 2026-08-02 | Milestone V2-3 complete: `Capability.configSchema?()` and `composeConfigSchemas` let capabilities declare and merge namespaced config fields; Engineering's table composes byte for byte with `CONFIG_FIELDS`/`DEFAULT_CONFIG`. `resolveConfig`/`orch config` deliberately left unwired pending a second capability with a real field. See ADR 0018. |

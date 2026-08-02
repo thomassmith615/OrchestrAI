@@ -142,6 +142,23 @@ lets a future capability's commands declare `scope: "user"` and run with no
 git repository involved at all — the proof V2-6 exists to demonstrate. See
 ADR 0017.
 
+## Config namespacing (V2)
+
+A capability declares its own configuration fields via an optional
+`configSchema()` (specs and defaults, unprefixed, plus a declared namespace),
+the config equivalent of `commands()`. `composeConfigSchemas` merges every
+capability's fields into one flat table, namespacing each with a dot
+(`home.token`) the way commands are namespaced with a space (`home status`),
+and rejects a same-namespace collision. Engineering's table composes to
+exactly `CONFIG_FIELDS`/`DEFAULT_CONFIG` at the root namespace — its usual
+concession.
+
+**`resolveConfig` and `orch config` do not consume a composed table yet.**
+They still resolve directly against `CONFIG_FIELDS`/`DEFAULT_CONFIG`, exactly
+as in Version 1. Wiring them to the composed mechanism is deferred until a
+second capability declares a real field worth resolving — a named revisit
+trigger, not an oversight. See ADR 0018.
+
 ## Data flow for a milestone run (target state, M9)
 
 1. Resolve workspace and configuration.
