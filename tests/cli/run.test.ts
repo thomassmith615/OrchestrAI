@@ -150,6 +150,21 @@ describe("run", () => {
     expect(received).toEqual({ args: ["anthropic"], force: true });
   });
 
+  it("reports the activated capabilities through the default registry", async () => {
+    const { out, invoke } = harness();
+
+    expect(await invoke("capabilities", "--json")).toBe(EXIT_CODES.success);
+    const data = JSON.parse(out.text()) as {
+      activated: { id: string; commandPrefix: string; commands: string[] }[];
+      failed: unknown[];
+    };
+
+    expect(data.failed).toEqual([]);
+    expect(data.activated).toHaveLength(1);
+    expect(data.activated[0]).toMatchObject({ id: "engineering", commandPrefix: "" });
+    expect(data.activated[0]?.commands).toContain("status");
+  });
+
   it("exits 4 when a command requires a repository and none exists", async () => {
     const { err, invoke } = harness();
 

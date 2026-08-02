@@ -22,6 +22,11 @@ what happened, and hands the decision to a human.
                     +---------------+---------------+
                                     |
                     +---------------v---------------+
+   runtime          |  capability contract, registry |   (V2-1)
+                    |  activation. Lifecycle only.  |
+                    +---------------+---------------+
+                                    |
+                    +---------------v---------------+
    engine           |  command contract, registry   |   (M1)
                     |  CommandResult: data + report |
                     +---------------+---------------+
@@ -54,7 +59,9 @@ what happened, and hands the decision to a human.
 ```
 
 Dependencies point downward only. `core` knows nothing about providers.
-Providers know nothing about workflows. Surfaces are thin.
+Providers know nothing about workflows. Surfaces are thin. `src/runtime`
+knows nothing about any capability; `src/capabilities` is the one layer
+allowed to name one. See ADR 0016.
 
 ## Package intent
 
@@ -62,6 +69,8 @@ Providers know nothing about workflows. Surfaces are thin.
 | --- | --- | --- |
 | `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace. No AI awareness. | M1, M2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
+| `src/runtime` | Capability contract, `CapabilityRegistry`, activation. Lifecycle only: register, activate, assemble, report. Never names a capability. | V2-1 |
+| `src/capabilities` | First-party capabilities and the composition root that names them (`assembleRuntime`). Engineering is the first; its implementation still lives where M1-M12 put it. | V2-1 |
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
 | `src/prompts` | Versioned `.md` templates, typed interpolation, registry. | M6 |
@@ -98,6 +107,26 @@ Providers know nothing about workflows. Surfaces are thin.
    files in the target repository, readable and diffable by humans.
 10. **Nothing is committed or pushed without explicit human approval.**
    Orchestraᵢ proposes; the operator disposes.
+11. **A capability declares what it offers; the runtime never names one.**
+   No `if (capability.id === "...")` in `src/runtime` or `src/core`. See
+   ADR 0016.
+
+## Runtime and capabilities (V2)
+
+A **capability** is a self-contained module — Engineering, later Home — that
+declares commands (and, as later milestones land, configuration, storage,
+events, routes, and pages) under its own namespace. The **runtime**
+(`src/runtime`) registers capabilities and activates them into a command
+registry; that is its entire job. It never branches on which capability it is
+looking at. `src/capabilities/index.ts` is the composition root: the one
+place first-party capabilities are listed and wired into `assembleRuntime()`,
+which `src/cli` calls to build its default registry.
+
+Engineering, the first capability, declares an empty command prefix so every
+v1 invocation (`orch status`, `orch next`, ...) is unchanged; that emptiness
+is a backwards-compatibility concession specific to the one capability that
+predates this model, not a pattern to copy. See ADR 0016 and
+`docs/ROADMAP-V2.md`.
 
 ## Data flow for a milestone run (target state, M9)
 

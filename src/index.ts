@@ -11,6 +11,17 @@ export {
   requireConfig,
   requireWorkspace,
 } from "./engine/index.js";
+export {
+  activateCapabilities,
+  buildCapabilitiesCommand,
+  CapabilityRegistry,
+  prefixedCommandName,
+} from "./runtime/index.js";
+export {
+  assembleRuntime,
+  defaultCapabilities,
+  engineeringCapability,
+} from "./capabilities/index.js";
 export { createProgram } from "./cli/program.js";
 export { run } from "./cli/run.js";
 export { buildBaseContext, enforceRequirements } from "./cli/context.js";
@@ -64,6 +75,14 @@ export type {
   Report,
   ReportField,
 } from "./engine/index.js";
+export type {
+  ActivationResult,
+  Capability,
+  CapabilitiesData,
+  CapabilityActivation,
+  CapabilityFailure,
+} from "./runtime/index.js";
+export type { RuntimeAssembly } from "./capabilities/index.js";
 export type { BaseContext } from "./cli/context.js";
 export type { ProgramOptions } from "./cli/program.js";
 export type { RunOptions } from "./cli/run.js";

@@ -16,10 +16,11 @@ import {
 } from "../core/errors.js";
 import { createLogger } from "../core/logger.js";
 import { nodeHosts } from "../core/hosts.js";
-import { createRegistry } from "../engine/index.js";
+import { assembleRuntime } from "../capabilities/index.js";
 import { loadPlugins } from "../plugins/index.js";
 import type { Hosts } from "../core/hosts.js";
 import type { CommandRegistry } from "../engine/registry.js";
+import type { ActivationResult } from "../runtime/index.js";
 import type { ExitCode } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
 
@@ -51,10 +52,26 @@ function isCommanderExitError(value: unknown): value is CommanderExitError {
   );
 }
 
+/**
+ * A registry supplied by the caller (tests, embedders) bypasses the runtime
+ * entirely. Otherwise the default capability set is activated fresh for this
+ * invocation.
+ */
+function resolveRegistry(
+  provided: CommandRegistry | undefined,
+): { registry: CommandRegistry; failedCapabilities: ActivationResult["failed"] } {
+  if (provided !== undefined) {
+    return { registry: provided, failedCapabilities: [] };
+  }
+
+  const assembly = assembleRuntime();
+  return { registry: assembly.registry, failedCapabilities: assembly.activation.failed };
+}
+
 export async function run(options: RunOptions): Promise<ExitCode> {
   const flags = readGlobalFlags(options.argv);
   const hosts = options.hosts ?? nodeHosts();
-  const registry = options.registry ?? createRegistry();
+  const { registry, failedCapabilities } = resolveRegistry(options.registry);
   const cwd = flags.cwd ?? options.cwd ?? process.cwd();
 
   const base = buildBaseContext(cwd, hosts, flags.overrides);
@@ -62,6 +79,12 @@ export async function run(options: RunOptions): Promise<ExitCode> {
   // Flags beat configuration, which beats the built-in default.
   const level = flags.level ?? base.config?.values.logLevel ?? "info";
   const logger = options.logger ?? createLogger({ level });
+
+  // A capability that failed to activate is a warning, never fatal, the same
+  // tolerance the plugin loader applies below.
+  for (const failure of failedCapabilities) {
+    logger.warn(`capability ${failure.id} failed to activate: ${failure.reason}`);
+  }
 
   // Plugins are loaded only when configured, so an ordinary invocation pays
   // nothing for a feature it is not using.

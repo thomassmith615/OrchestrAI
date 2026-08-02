@@ -3,6 +3,33 @@
 All notable changes to this project are documented here.
 Format follows Keep a Changelog. Versioning is semantic.
 
+## [Unreleased]
+
+Version 2 in progress: generalizing the runtime to host more than one
+Capability. See `docs/ROADMAP-V2.md`.
+
+### Added
+
+- Milestone V2-1: capabilities.
+  - `src/runtime/`: the `Capability` contract (id, summary, declared command
+    prefix, `commands()`), a `CapabilityRegistry`, and `activateCapabilities`,
+    which registers a capability's commands into a command registry under its
+    declared prefix. The runtime's job is lifecycle only — register,
+    activate, assemble, report — and it never branches on which capability is
+    being activated. See ADR 0016.
+  - `src/capabilities/engineering/`: Engineering declared as the first
+    capability, with an empty command prefix (a backwards-compatibility
+    concession) and no implementation moved — it wraps the existing
+    `createRegistry()` aggregation rather than duplicating it.
+  - `src/capabilities/index.ts`: the composition root that lists first-party
+    capabilities and assembles the runtime the CLI drives by default.
+  - `orch capabilities`, reporting what activated and what, if anything,
+    failed to.
+  - A test that activates Engineering alongside a second, throwaway
+    capability under its own prefix and asserts Engineering's contributed
+    command names are still exactly the v1 27 — the test that would catch a
+    privileged path.
+
 ## [1.0.0] - 2026-08-02
 
 First tagged release. Version 1 is complete: all 12 milestones delivered.

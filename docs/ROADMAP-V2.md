@@ -1,0 +1,87 @@
+# Version 2 Roadmap
+
+Six milestones. The objective of Version 2 is to generalize Orchestraᵢ from an
+engineering application into a coordination runtime that can host several
+applications — Capabilities — sharing one command contract, one configuration
+system, one storage model, and eventually one event model. Engineering becomes
+the first Capability rather than the thing the runtime is made of.
+
+This file is the source of truth for session continuation, the same role
+`docs/ROADMAP.md` played for Version 1. When instructed to "move on to the
+next milestone", inspect this file, verify the last completed milestone, and
+implement the next unchecked one.
+
+**Status legend:** `[x]` complete, `[ ]` not started.
+
+**Current position:** V2-1 complete.
+
+**The phase's Definition of Done** (not yet reached): the runtime hosts two
+capabilities; Engineering is one; a trivial placeholder is the other; the
+placeholder executes entirely under user scope with no git repository
+anywhere; and at no point does the runtime branch on a capability's identity.
+**Home implementation does not begin until that proof exists.**
+
+---
+
+- [x] **V2-1. Capabilities**
+  `src/runtime/` introduces the capability contract (`Capability`: id,
+  summary, declared command prefix, `commands()`), a `CapabilityRegistry`, and
+  `activateCapabilities`, which registers every capability's commands into a
+  command registry under its declared prefix. The runtime's job is lifecycle
+  only — register, activate, assemble, report — and it never branches on
+  which capability is being activated.
+  `src/capabilities/engineering/index.ts` declares Engineering as the first
+  capability, with an empty command prefix (a backwards-compatibility
+  concession, not a precedent) and no implementation moved: it wraps the
+  existing `createRegistry()` aggregation rather than duplicating it.
+  `src/capabilities/index.ts` is the composition root — the one place allowed
+  to name Engineering — and assembles the default runtime the CLI now drives.
+  Delivers `orch capabilities`. See ADR 0016.
+
+- [ ] **V2-2. Scope**
+  Replaces the assumption that every command runs inside a git repository
+  with an explicit `Scope`: repository scope (rooted at the git root, exactly
+  as Version 1) or user scope (rooted at `~/.orchestrai`, with no repository
+  anywhere). `CommandRequirements.repository` is replaced by
+  `CommandRequirements.scope: "repository" | "user" | "either"`, defaulting
+  to repository when a command declares requirements without specifying one,
+  which is what keeps all 27 v1 commands unchanged. `CommandContext` gains a
+  resolved `scope` field; `orch info` and `orch doctor` report it. See
+  ADR 0017.
+
+- [ ] **V2-3. Namespaced configuration**
+  Today `ConfigValues` is a fixed interface of eleven fields and
+  `CONFIG_FIELDS` is a closed table: a capability cannot add a setting
+  without editing core, and every capability shares one flat namespace. This
+  composes the field table instead — capabilities declare their own fields
+  under their own namespace — while reusing the existing layered resolver,
+  coercion, and per-field source tracking verbatim. Engineering keeps the
+  root namespace as its own backwards-compatibility concession.
+
+- [ ] **V2-4. Namespaced storage**
+  Each capability gets a storage handle rooted at its own directory (under
+  the resolved scope's state directory) and unable to address anything above
+  it. Engineering keeps the shared `.orchestrai/` root it has always used.
+
+- [ ] **V2-5. Events, jobs, and provider registration**
+  A typed, synchronous, in-process event emitter (event names of the form
+  `<capability>.<noun>.<verb>`; failing handlers are logged, not fatal). Job
+  definitions as contracts only — no scheduler; `launchd` already exists for
+  a single always-on Mac. Providers become something a capability can
+  register rather than something only core knows about.
+
+- [ ] **V2-6. Routes, pages, and the proof**
+  Route and page registries, generalizing the read-only dashboard from
+  hardcoded Engineering concepts into a page a capability registers. Then a
+  placeholder capability that runs entirely under user scope, with no git
+  repository anywhere, proving the phase's Definition of Done. Home
+  implementation begins only after this lands.
+
+---
+
+## Roadmap change log
+
+| Date | Change |
+| --- | --- |
+| 2026-08-02 | Version 2 roadmap defined (6 milestones), continuing directly from the Version 1 1.0.0 release. |
+| 2026-08-02 | Milestone V2-1 complete: capability contract, registry, and activation in `src/runtime/`; Engineering declared as the first capability in `src/capabilities/engineering/`, with no implementation moved; `orch capabilities`. See ADR 0016. |
