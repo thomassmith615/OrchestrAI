@@ -17,6 +17,7 @@ import {
 import { createLogger } from "../core/logger.js";
 import { nodeHosts } from "../core/hosts.js";
 import { createRegistry } from "../engine/index.js";
+import { loadPlugins } from "../plugins/index.js";
 import type { Hosts } from "../core/hosts.js";
 import type { CommandRegistry } from "../engine/registry.js";
 import type { ExitCode } from "../core/errors.js";
@@ -61,6 +62,34 @@ export async function run(options: RunOptions): Promise<ExitCode> {
   // Flags beat configuration, which beats the built-in default.
   const level = flags.level ?? base.config?.values.logLevel ?? "info";
   const logger = options.logger ?? createLogger({ level });
+
+  // Plugins are loaded only when configured, so an ordinary invocation pays
+  // nothing for a feature it is not using.
+  const specifiers = base.config?.values.plugins ?? [];
+  if (specifiers.length > 0 && base.workspace !== null) {
+    const result = await loadPlugins({
+      root: base.workspace.root,
+      specifiers,
+      hosts,
+      logger,
+    });
+
+    for (const failure of result.failed) {
+      logger.warn(`plugin ${failure.specifier}: ${failure.reason}`);
+    }
+
+    for (const entry of result.loaded) {
+      for (const command of entry.plugin.commands ?? []) {
+        try {
+          registry.register(command);
+        } catch {
+          logger.warn(
+            `plugin ${entry.plugin.name}: command ${command.name} is already registered`,
+          );
+        }
+      }
+    }
+  }
 
   let exitCode: ExitCode = EXIT_CODES.success;
 

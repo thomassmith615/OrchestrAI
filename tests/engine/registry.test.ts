@@ -62,6 +62,7 @@ describe("createRegistry", () => {
       "build",
       "config",
       "context",
+      "dashboard",
       "doctor",
       "history",
       "info",
@@ -72,6 +73,7 @@ describe("createRegistry", () => {
       "memory verify",
       "milestone",
       "next",
+      "plugins",
       "propose",
       "propose apply",
       "propose list",
@@ -83,6 +85,7 @@ describe("createRegistry", () => {
       "roadmap",
       "status",
       "test",
+      "update",
     ]);
   });
 });

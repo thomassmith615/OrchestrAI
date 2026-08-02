@@ -3,7 +3,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "scripts/**"],
+    // Build scripts and example plugins are plain Node modules outside the
+    // typed project, so type-aware linting has nothing to resolve them against.
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "scripts/**",
+      "examples/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

@@ -20,16 +20,18 @@ export interface DirEntry {
   readonly isDirectory: boolean;
 }
 
+// `this: void` throughout: hosts are plain objects built from closures, so the
+// methods never depend on their receiver and are safe to pass around.
 export interface FileSystemHost {
-  exists(path: string): boolean;
-  readFile(path: string): string;
-  writeFile(path: string, content: string): void;
+  exists(this: void, path: string): boolean;
+  readFile(this: void, path: string): string;
+  writeFile(this: void, path: string, content: string): void;
   /** Creates the directory and any missing parents. */
-  mkdir(path: string): void;
+  mkdir(this: void, path: string): void;
   /** Immediate children of a directory. Order is not guaranteed. */
-  readDir(path: string): readonly DirEntry[];
+  readDir(this: void, path: string): readonly DirEntry[];
   /** Size in bytes. Returns 0 for anything unreadable. */
-  size(path: string): number;
+  size(this: void, path: string): number;
 }
 
 export interface ProcessResult {

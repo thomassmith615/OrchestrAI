@@ -3,9 +3,28 @@
 All notable changes to this project are documented here.
 Format follows Keep a Changelog. Versioning is semantic.
 
-## [Unreleased]
+## [1.0.0] - 2026-08-02
+
+First tagged release. Version 1 is complete: all 12 milestones delivered.
 
 ### Added
+
+- Milestone 12: extension, surface, and release.
+  - Plugin contract with declared permissions (`read-repo`, `write-repo`,
+    `network`, `state`). The loader hands a plugin only the hosts it asked for.
+    Permissions are a declaration, not a sandbox, and that limit is documented
+    wherever they are. See ADR 0015.
+  - Plugin commands registered at runtime, only when `plugins` is configured.
+    A failed plugin is a warning, never fatal.
+  - `examples/plugin-example.mjs`, a working plugin that adds a command.
+  - Read-only dashboard: one self-contained document, no build step, no script,
+    no external request, no mutating route. Binds to localhost by default.
+    `GET /api/snapshot` serves the same data as JSON.
+  - `orch update`, which reports whether a newer version was published and
+    never installs anything.
+  - GitHub Actions pipeline: the Definition of Done on node 20 and 22, plus a
+    smoke job that exercises the built binary against this repository.
+  - Packaging for release: MIT license, `files`, `prepack`, version 1.0.0.
 
 - Milestone 10: project memory.
   - Append-only records in `.orchestrai/memory/records.jsonl`, one JSON object

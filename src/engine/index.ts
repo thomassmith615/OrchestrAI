@@ -8,6 +8,7 @@ import { CommandRegistry } from "./registry.js";
 import { buildCommand, testCommand } from "./commands/gates.js";
 import { configCommand } from "./commands/config.js";
 import { contextCommand } from "./commands/context.js";
+import { dashboardCommand } from "./commands/dashboard.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { historyCommand } from "./commands/history.js";
 import { infoCommand } from "./commands/info.js";
@@ -30,7 +31,9 @@ import {
 } from "./commands/propose.js";
 import { providerAddCommand } from "./commands/provider-add.js";
 import { reviewCommand } from "./commands/review.js";
+import { pluginsCommand } from "./commands/plugins.js";
 import { providersCommand } from "./commands/providers.js";
+import { updateCommand } from "./commands/update.js";
 import { statusCommand } from "./commands/status.js";
 
 export function createRegistry(): CommandRegistry {
@@ -39,6 +42,7 @@ export function createRegistry(): CommandRegistry {
   registry.register(buildCommand);
   registry.register(configCommand);
   registry.register(contextCommand);
+  registry.register(dashboardCommand);
   registry.register(doctorCommand);
   registry.register(historyCommand);
   registry.register(infoCommand);
@@ -56,7 +60,9 @@ export function createRegistry(): CommandRegistry {
   registry.register(proposeListCommand);
   registry.register(proposeRejectCommand);
   registry.register(proposeShowCommand);
+  registry.register(pluginsCommand);
   registry.register(providersCommand);
+  registry.register(updateCommand);
   registry.register(reviewCommand);
   registry.register(statusCommand);
   registry.register(testCommand);

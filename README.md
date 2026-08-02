@@ -1,5 +1,7 @@
 # Orchestraᵢ
 
+[![CI](https://github.com/thomassmith615/OrchestrAI/actions/workflows/ci.yml/badge.svg)](https://github.com/thomassmith615/OrchestrAI/actions/workflows/ci.yml)
+
 The coordination layer that sits above AI models and orchestrates the software
 engineering lifecycle.
 
@@ -14,7 +16,8 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 8 of 12 is complete.
+Version 1 is complete: all 12 milestones delivered. See
+[docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Requirements
 
@@ -40,28 +43,37 @@ Available today:
 
 | Command | Description |
 | --- | --- |
-| `orch init` | Initialize Orchestraᵢ inside an existing repository |
-| `orch doctor` | Diagnose node, git, repository, config, and credentials |
-| `orch config` | Show resolved settings and the layer each came from |
-| `orch providers` | List AI providers, `--verify` for a live check |
-| `orch provider add <name>` | Select and configure a provider |
-| `orch status` | Repository, git state, toolchain, provider, and gate verdicts |
-| `orch context` | Show what would be sent to a provider, and what would not |
-| `orch build` | Run the detected build command |
-| `orch test` | Run all detected validation (typecheck, lint, test) |
-| `orch review` | Ask the provider for an engineering summary |
-| `orch propose <task>` | Stage a change for review. Writes nothing |
-| `orch propose apply` | Write a reviewed proposal and run the gates |
-| `orch roadmap` | Milestone progression, current one marked |
-| `orch milestone` | Run the workflow for the current milestone |
-| `orch info` | Report the running environment |
+| `orch build` | Execute the configured build pipeline |
+| `orch config` | Show the resolved configuration and the source of each value |
+| `orch context [focus]` | Show what would be sent to a provider, and what would be dropped |
+| `orch dashboard` | Serve a read-only local dashboard |
+| `orch doctor` | Run diagnostic checks on the repository configuration |
+| `orch history` | Display engineering history and completed milestones |
+| `orch info` | Show the current Orchestrai environment |
+| `orch init` | Initialize Orchestrai inside an existing repository |
+| `orch memory [query]` | Inspect project memory |
+| `orch memory add <title>` | Record a decision, constraint, or note |
+| `orch memory compact` | Rewrite memory, dropping damaged and duplicated records |
+| `orch memory verify` | Check project memory for damaged or duplicated records |
+| `orch milestone` | Execute the workflow for the current milestone |
+| `orch next` | Determine the next milestone and prepare the engineering workflow |
+| `orch plugins` | List configured plugins and the permissions they request |
+| `orch propose <task>` | Ask the provider for a change, staged for review. Writes nothing. |
+| `orch propose apply [id]` | Write a proposal to the working tree and run the gates |
+| `orch propose list` | List change proposals, newest first |
+| `orch propose reject [id]` | Mark a proposal rejected without applying it |
+| `orch propose show [id]` | Show a proposal's full diff |
+| `orch provider add <name>` | Select and configure an AI provider |
+| `orch providers` | Display available AI providers and whether they are usable |
+| `orch review [focus]` | Generate an engineering summary for human review |
+| `orch roadmap` | Display the roadmap and milestone progression |
+| `orch status` | Show repository health, toolchain, and configured provider |
+| `orch test` | Execute all configured validation (typecheck, lint, test) |
+| `orch update` | Report whether a newer Orchestrai has been published |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`next`, `memory`, `history`, `plugins`, `dashboard`,
-`update`) is
-specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
-one. Planned commands are not stubbed: help output lists only what works.
+Every command is implemented; see [docs/CLI.md](docs/CLI.md) for the contract.
 
 Every command accepts `--json`, `--verbose`, `--quiet`, `--cwd <path>`, and
 `--set key=value`, and returns a documented exit code.
@@ -97,6 +109,10 @@ The `mock` provider is deterministic and offline: `orch provider add mock`.
 | `npm test` | Vitest suite |
 | `npm run verify` | Full Definition of Done gate |
 
+`./scripts/dump-context.sh > context.md` writes a ~27 kB summary of the
+repository (roadmap, architecture, decisions, command surface, core contracts)
+for handing to someone who has not seen it.
+
 ## Layout
 
 ```
@@ -108,7 +124,9 @@ src/context/  relevance ranking, token budgeting, context assembly
 src/prompts/  versioned .md templates, typed interpolation, registry
 src/proposals/ change parsing, staging, diffing, application. The write path.
 src/workflow/ roadmap parsing, step contract, execution, run log
-src/memory/   append-only records and ranked retrieval
+src/memory/   append-only records, ranked retrieval, usage ledger
+src/plugins/  plugin contract, loading, granted capabilities
+src/dashboard/ read-only snapshot and renderer
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

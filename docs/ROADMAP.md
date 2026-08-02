@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 11 complete. Next up: Milestone 12.
+**Current position:** Version 1 complete. All 12 milestones delivered.
 
 ---
 
@@ -106,7 +106,7 @@ milestone, and implement the next unchecked one.
   local and open source models are supported without new code. Memory
   compaction, summarization, and `orch memory verify`.
 
-- [ ] **M12. Extension, surface, and release**
+- [x] **M12. Extension, surface, and release**
   Plugin system with capability contracts, discovery, lifecycle hooks, and
   explicit permissions. Read only local dashboard over roadmap state, memory,
   run history, and repository health. Packaging, versioning, and changelog for
@@ -148,3 +148,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 9 complete: end to end orchestration. `orch next` plans, `orch milestone` implements and stages, `--apply` completes the loop. |
 | 2026-08-02 | Milestone 10 complete: append-only memory with keyword retrieval behind a swappable interface, `orch memory`, `orch memory add`, `orch history`. |
 | 2026-08-02 | Milestone 11 complete: retry with full jitter and Retry-After, narrow failover, advisory pricing and a usage ledger, OpenAI-compatible provider, memory verify and compact. Also completed the M10 recall wiring, which had silently failed to apply. |
+| 2026-08-02 | Milestone 12 complete: plugin contract with declared permissions, read-only dashboard, `orch update`, CI pipeline, and the 1.0.0 release. Version 1 is done. |

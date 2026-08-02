@@ -29,6 +29,8 @@ export interface ConfigValues {
   readonly maxRetries: number;
   /** Per-request deadline, in seconds. */
   readonly requestTimeout: number;
+  /** Plugin module specifiers, resolved relative to the repository root. */
+  readonly plugins: readonly string[];
 }
 
 export type ConfigKey = keyof ConfigValues;
@@ -101,6 +103,11 @@ export const CONFIG_FIELDS: Readonly<Record<ConfigKey, FieldSpec>> = {
     env: "ORCH_REQUEST_TIMEOUT",
     description: "Per-request deadline, in seconds",
   },
+  plugins: {
+    kind: "stringArray",
+    env: "ORCH_PLUGINS",
+    description: "Plugin modules to load",
+  },
 };
 
 export const CONFIG_KEYS = Object.keys(CONFIG_FIELDS) as readonly ConfigKey[];
@@ -116,6 +123,7 @@ export const DEFAULT_CONFIG: ConfigValues = {
   fallbackProvider: null,
   maxRetries: 3,
   requestTimeout: 120,
+  plugins: [],
 };
 
 export function isConfigKey(value: string): value is ConfigKey {

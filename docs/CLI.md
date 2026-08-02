@@ -54,9 +54,9 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch next` | Determine the next milestone and prepare the workflow | M9 |
 | `orch memory` | Inspect project memory; `verify` and `compact` sub-commands | M10, M11, available |
 | `orch history` | Display engineering history and completed milestones | M10, available |
-| `orch plugins` | Manage Orchestraᵢ plugins | M12 |
-| `orch dashboard` | Launch the optional local web dashboard | M12 |
-| `orch update` | Update Orchestraᵢ | M12 |
+| `orch plugins` | List plugins and the permissions they request | M12, available |
+| `orch dashboard` | Serve a read-only local dashboard | M12, available |
+| `orch update` | Report whether a newer version has been published | M12, available |
 
 `orch config`, `orch context`, and the `orch propose` family are additions to
 the original surface. The first two make otherwise invisible behaviour
@@ -275,6 +275,49 @@ chat completions format, including local runtimes:
 orch provider add openai --model llama-3.1-70b
 orch config --set baseUrl=http://localhost:11434/v1
 ```
+
+## Plugins
+
+```bash
+orch config --set plugins=./examples/plugin-example.mjs
+orch plugins        # what loaded, and what each one asked for
+orch hello          # a command contributed by a plugin
+```
+
+A plugin exports a default object with a name, a version, declared permissions,
+and optionally commands, workflow steps, and hooks. See
+`examples/plugin-example.mjs`.
+
+Permissions (`read-repo`, `write-repo`, `network`, `state`) decide which hosts a
+plugin is handed: without `network` there is no HTTP host, and with `read-repo`
+alone the filesystem host throws on write.
+
+**Permissions are a declaration, not a sandbox.** Plugins run in this process,
+and one that imports `node:fs` directly bypasses the host it was given. Read
+what a plugin asks for, and read the plugin.
+
+A plugin that fails to load is a warning, never fatal.
+
+## Dashboard
+
+```bash
+orch dashboard                    # http://127.0.0.1:4173
+orch dashboard --port 8080
+orch dashboard --once             # print the HTML and exit
+```
+
+Read only: no form, no button, no mutating route, no script, no external
+request. `GET /api/snapshot` returns the same data as JSON. It binds to
+localhost unless `--host` says otherwise.
+
+## Updating
+
+```bash
+orch update            # reports installed against published
+orch update --offline  # skip the registry check
+```
+
+It never installs anything. It prints the command and stops.
 
 ## Preconditions
 

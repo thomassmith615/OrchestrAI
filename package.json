@@ -1,10 +1,10 @@
 {
   "name": "orchestrai",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "The coordination layer that sits above AI models and orchestrates the software engineering lifecycle.",
   "type": "module",
-  "private": true,
-  "license": "UNLICENSED",
+  "private": false,
+  "license": "MIT",
   "engines": {
     "node": ">=20.11"
   },
@@ -21,7 +21,9 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-templates.mjs",
@@ -30,7 +32,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
+    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\"",
+    "prepack": "npm run build",
+    "dev": "tsc -p tsconfig.build.json --watch"
   },
   "dependencies": {
     "commander": "^15.0.0"
@@ -42,5 +46,15 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
+  },
+  "keywords": [
+    "ai",
+    "orchestration",
+    "cli",
+    "engineering-workflow",
+    "llm"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -2,25 +2,129 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch rather than paying for both.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   verify:
-    name: Definition of Done
+    name: Definition of Done (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lowest supported runtime and current LTS. Both must stay green.
+        node: ["20.x", "22.x"]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
+
+      - name: Install
+        run: npm ci
+
       - name: Type check
         run: npm run typecheck
+
       - name: Lint
         run: npm run lint
+
       - name: Test
         run: npm test
+
       - name: Build
         run: npm run build
+
+      - name: Upload build output
+        if: matrix.node == '22.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  smoke:
+    name: CLI smoke test
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      # A full clone: the CLI reads real git state, and the default shallow
+      # fetch leaves `git log` with a single synthetic commit.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Version and help
+        run: |
+          node dist/cli/main.js --version
+          node dist/cli/main.js --help
+
+      - name: Initialize and diagnose
+        run: |
+          node dist/cli/main.js init
+          node dist/cli/main.js doctor --json > doctor.json
+          # Credentials are absent in CI, which is a warning, not a failure.
+          test "$(jq '.failures' doctor.json)" = "0"
+
+      - name: Repository awareness
+        run: |
+          node dist/cli/main.js status --json > status.json
+          test "$(jq -r '.toolchain.ecosystem' status.json)" = "node"
+          test "$(jq '.scan.files > 0' status.json)" = "true"
+          test "$(jq '.scan.truncated' status.json)" = "false"
+
+      - name: Context packing stays inside its budget
+        run: |
+          node dist/cli/main.js context --json > context.json
+          test "$(jq '.tokens <= .usable' context.json)" = "true"
+
+      - name: Memory round trip
+        run: |
+          node dist/cli/main.js memory add "CI smoke record" \
+            --kind note --body "Written by the smoke job." --tags ci
+          node dist/cli/main.js memory verify
+          test "$(node dist/cli/main.js memory --json | jq '.total')" = "1"
+
+      - name: Offline orchestration loop
+        run: |
+          node dist/cli/main.js provider add mock
+          node dist/cli/main.js next --dry-run
+          node dist/cli/main.js propose "add a marker file" --json > proposal.json
+          test "$(jq '.summary.files > 0' proposal.json)" = "true"
+          # A proposal must not touch the working tree.
+          test -z "$(git status --porcelain -- . ':!.orchestrai' ':!orchestrai.config.json')"
+
+      - name: Exit codes are meaningful
+        run: |
+          set +e
+          node dist/cli/main.js teleport > /dev/null 2>&1
+          test $? -eq 2 || { echo "expected usage exit 2"; exit 1; }
+          node dist/cli/main.js provider add skynet > /dev/null 2>&1
+          test $? -eq 5 || { echo "expected configuration exit 5"; exit 1; }
+          ( cd /tmp && node "$GITHUB_WORKSPACE/dist/cli/main.js" init > /dev/null 2>&1 )
+          test $? -eq 4 || { echo "expected precondition exit 4"; exit 1; }
+
+      - name: Dashboard renders
+        run: |
+          node dist/cli/main.js dashboard --once | grep -q "Roadmap"
