@@ -6,10 +6,14 @@
  * API, and an MCP server are later clients of the same definitions.
  *
  * Nothing in this file may import a CLI framework. Commands describe their
- * arguments and options in neutral terms and the surface adapts them.
+ * arguments, options, and preconditions in neutral terms and the surface
+ * adapts them.
  */
+import type { ResolvedConfig } from "../core/config/index.js";
 import type { ExitCode } from "../core/errors.js";
+import type { Hosts } from "../core/hosts.js";
 import type { Logger } from "../core/logger.js";
+import type { Workspace } from "../core/workspace.js";
 
 /** Result state of a reported value, used for aligned status output. */
 export type FieldStatus = "pass" | "fail" | "warn" | "info";
@@ -51,6 +55,19 @@ export interface CommandOption {
   readonly description: string;
 }
 
+/**
+ * Preconditions enforced by the surface before `execute` runs, so that
+ * commands never re-implement the same guard clauses.
+ */
+export interface CommandRequirements {
+  /** Must be inside a git repository. Failure exits 4. */
+  readonly repository?: boolean;
+  /** `orch init` must have run. Failure exits 4. */
+  readonly initialized?: boolean;
+  /** Configuration must load cleanly. Failure exits 5. */
+  readonly config?: boolean;
+}
+
 export interface CommandContext {
   /** Directory the command should operate against. */
   readonly cwd: string;
@@ -59,18 +76,45 @@ export interface CommandContext {
   readonly options: Readonly<Record<string, unknown>>;
   /** Positional arguments in declaration order. */
   readonly args: readonly string[];
+  /** Filesystem, subprocess, and environment access. */
+  readonly hosts: Hosts;
+  /** Null when the working directory is not inside a git repository. */
+  readonly workspace: Workspace | null;
+  /** Null when configuration failed to load; only tolerated by `doctor`. */
+  readonly config: ResolvedConfig | null;
+  /** Populated when configuration failed to load. */
+  readonly configError: unknown;
 }
 
 export interface CommandDefinition<TData = unknown> {
-  /** Invocation name, e.g. `status`. Sub-commands use `provider add`. */
+  /** Invocation name, e.g. `status`. */
   readonly name: string;
   readonly summary: string;
   readonly args?: readonly CommandArgument[];
   readonly options?: readonly CommandOption[];
+  readonly requires?: CommandRequirements;
   execute(context: CommandContext): Promise<CommandResult<TData>>;
 }
 
 /** Convenience helper so commands do not repeat the success default. */
 export function ok<TData>(data: TData, report: Report): CommandResult<TData> {
   return { data, report };
+}
+
+/**
+ * Narrows a context whose requirements have already been enforced by the
+ * surface, so commands can use `workspace` and `config` without null checks.
+ */
+export function requireWorkspace(context: CommandContext): Workspace {
+  if (context.workspace === null) {
+    throw new Error("Command requires a workspace but none was resolved");
+  }
+  return context.workspace;
+}
+
+export function requireConfig(context: CommandContext): ResolvedConfig {
+  if (context.config === null) {
+    throw new Error("Command requires configuration but none was resolved");
+  }
+  return context.config;
 }

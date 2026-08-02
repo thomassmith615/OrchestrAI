@@ -60,7 +60,7 @@ Providers know nothing about workflows. Surfaces are thin.
 
 | Package | Responsibility | Introduced |
 | --- | --- | --- |
-| `src/core` | Errors, exit codes, logging, config, workspace resolution. No AI awareness. | M1 |
+| `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace. No AI awareness. | M1, M2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One folder per provider behind a single interface. | M3 |
@@ -89,9 +89,12 @@ Providers know nothing about workflows. Surfaces are thin.
 6. **No console outside the logger.** ESLint enforces this.
 7. **Errors are typed.** Anything reaching the process boundary is an
    `OrchestraiError` with a stable code and an exit code.
-8. **State lives in `.orchestrai/`.** Memory, roadmap state, and run history are
+8. **Commands declare preconditions, they do not check them.** `repository`,
+   `initialized`, and `config` requirements are enforced by the surface before
+   `execute` runs. See `docs/CLI.md`.
+9. **State lives in `.orchestrai/`.** Memory, roadmap state, and run history are
    files in the target repository, readable and diffable by humans.
-9. **Nothing is committed or pushed without explicit human approval.**
+10. **Nothing is committed or pushed without explicit human approval.**
    Orchestraᵢ proposes; the operator disposes.
 
 ## Data flow for a milestone run (target state, M9)

@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 1 of 12 is complete.
+Version 1 is under construction. Milestone 2 of 12 is complete.
 
 ## Requirements
 
@@ -33,18 +33,33 @@ orch info
 
 | Command | Description |
 | --- | --- |
+| `orch init` | Initialize Orchestraᵢ inside an existing repository |
+| `orch doctor` | Diagnose node, git, repository, config, and credentials |
+| `orch config` | Show resolved settings and the layer each came from |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`init`, `status`, `next`, `milestone`, `review`,
-`doctor`, `test`, `build`, `providers`, `memory`, `history`, `plugins`,
-`dashboard`, `update`) is specified in [docs/CLI.md](docs/CLI.md) with the
-milestone that delivers each one. Planned commands are not stubbed: help output
-lists only what works.
+The full planned surface (`status`, `next`, `milestone`, `review`, `test`,
+`build`, `providers`, `memory`, `history`, `plugins`, `dashboard`, `update`) is
+specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
+one. Planned commands are not stubbed: help output lists only what works.
 
-Every command accepts `--json`, `--verbose`, `--quiet`, and `--cwd <path>`, and
-returns a documented exit code.
+Every command accepts `--json`, `--verbose`, `--quiet`, `--cwd <path>`, and
+`--set key=value`, and returns a documented exit code.
+
+## Getting a repository ready
+
+```bash
+cd /path/to/your/repo
+orch init      # writes orchestrai.config.json and .orchestrai/
+orch doctor    # verifies the setup
+orch config    # shows what resolved and from where
+```
+
+Settings resolve through defaults, then `orchestrai.config.json`, then
+`ORCH_*` environment variables, then `--set`. Credentials are read from the
+environment and never written to the config file.
 
 ## Scripts
 
@@ -59,9 +74,9 @@ returns a documented exit code.
 ## Layout
 
 ```
-src/core/     platform primitives (errors and exit codes, logging, environment)
+src/core/     errors and exit codes, logging, injectable hosts, config, workspace
 src/engine/   command contract and registry, the interface every surface uses
-src/cli/      commander adaptation, rendering, global flags. No logic.
+src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure
 docs/         charter, CLI contract, architecture, roadmap, decision records
 ```
@@ -70,7 +85,8 @@ docs/         charter, CLI contract, architecture, roadmap, decision records
 
 Write a `CommandDefinition` in `src/engine/commands/`, register it in
 `src/engine/index.ts`. Return a `CommandResult` with a `data` payload and a
-`report`. Rendering, `--json`, and exit code handling are already done.
+`report`. Declare what the command needs via `requires` and the surface enforces
+it. Rendering, `--json`, preconditions, and exit codes are already handled.
 
 ## Contributing rules
 

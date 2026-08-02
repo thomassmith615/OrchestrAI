@@ -7,6 +7,19 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 2: configuration, workspace, and diagnostics.
+  - Workspace resolution by walking upward to the git root, with the state
+    directory and config path derived from it.
+  - Layered configuration (defaults, `orchestrai.config.json`, `ORCH_*`
+    environment variables, `--set key=value`) with per-field source tracking
+    and typed validation. See ADR 0005.
+  - Injectable filesystem, subprocess, and environment hosts so that commands
+    are testable without touching the machine.
+  - Declared command preconditions (`repository`, `initialized`, `config`)
+    enforced by the surface, mapping to exit codes 4 and 5.
+  - `orch init`, `orch doctor`, `orch config`.
+  - Status fields now render a verdict plus its detail on one line.
+
 - Milestone 1: foundation, command contract, and CLI shell.
   - TypeScript project with strict compiler settings, ESM output, and the
     `orch` binary.

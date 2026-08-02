@@ -32,9 +32,9 @@ Commands not marked as available do not exist yet and are not stubbed.
 | Command | Description | Milestone |
 | --- | --- | --- |
 | `orch info` | Report the running environment | M1, available |
-| `orch init` | Initialize Orchestraᵢ inside an existing repository | M2 |
-| `orch doctor` | Run diagnostic checks on the repository configuration | M2 |
-| `orch config` | Inspect resolved configuration and its sources | M2 |
+| `orch init` | Initialize Orchestraᵢ inside an existing repository | M2, available |
+| `orch doctor` | Run diagnostic checks on the repository configuration | M2, available |
+| `orch config` | Inspect resolved configuration and its sources | M2, available |
 | `orch providers` | Display installed AI providers | M3 |
 | `orch provider add <name>` | Install or configure an AI provider | M3 |
 | `orch status` | Repository health, milestone progress, providers, pending work | M5 |
@@ -63,8 +63,39 @@ Accepted by every command, before or after the command name.
 | `--verbose` | Include debug output |
 | `--quiet` | Suppress everything except errors |
 | `--cwd <path>` | Directory to operate against |
+| `--set <key=value>` | Override a configuration value, repeatable |
 | `-v, --version` | Print the version |
 | `-h, --help` | Print help |
+
+## Configuration
+
+Settings resolve through four layers, lowest precedence first:
+
+1. Built-in defaults
+2. `orchestrai.config.json` at the repository root
+3. Environment variables (`ORCH_PROVIDER`, `ORCH_MODEL`, and so on)
+4. `--set key=value` on the command line
+
+`orch config` prints the resolved value and its source for every setting.
+Credentials are never stored in the config file: they are read from provider
+specific environment variables, and `orch doctor` reports presence only.
+
+State lives in `.orchestrai/` at the repository root. It is meant to be
+committed, apart from `.orchestrai/cache/`.
+
+## Preconditions
+
+Commands declare what they need, and the surface enforces it before the command
+runs. A command that needs a repository never has to check for one.
+
+| Requirement | Failure | Exit |
+| --- | --- | --- |
+| `repository` | Not inside a git repository | 4 |
+| `initialized` | `orch init` has not been run | 4 |
+| `config` | Configuration is missing or invalid | 5 |
+
+`orch doctor` deliberately declares none of these, so that it can diagnose a
+broken setup instead of failing with it.
 
 ## Exit codes
 

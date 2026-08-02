@@ -4,6 +4,8 @@ import { createLogger } from "../../src/core/logger.js";
 import { EXIT_CODES } from "../../src/core/errors.js";
 import { CommandRegistry } from "../../src/engine/registry.js";
 import { ok } from "../../src/engine/command.js";
+import { fakeFileSystem, fakeHosts } from "../support/fakes.js";
+import type { Hosts } from "../../src/core/hosts.js";
 import type { LogSink } from "../../src/core/logger.js";
 
 interface RecordingSink extends LogSink {
@@ -24,7 +26,7 @@ function recordingSink(): RecordingSink {
   };
 }
 
-function harness(registry?: CommandRegistry): {
+function harness(registry?: CommandRegistry, hosts?: Hosts): {
   out: RecordingSink;
   err: RecordingSink;
   invoke: (...argv: string[]) => Promise<number>;
@@ -41,6 +43,7 @@ function harness(registry?: CommandRegistry): {
         argv,
         logger,
         cwd: "/workspace/demo",
+        hosts: hosts ?? fakeHosts(),
         ...(registry === undefined ? {} : { registry }),
       }),
   };
@@ -67,7 +70,7 @@ describe("run", () => {
     const { out, invoke } = harness();
 
     expect(await invoke("info")).toBe(EXIT_CODES.success);
-    expect(out.text()).toContain("Directory:  /workspace/demo");
+    expect(out.text()).toMatch(/Directory:\s+\/workspace\/demo/);
   });
 
   it("emits JSON when --json is supplied after the command", async () => {
@@ -145,5 +148,54 @@ describe("run", () => {
       EXIT_CODES.success,
     );
     expect(received).toEqual({ args: ["anthropic"], force: true });
+  });
+
+  it("exits 4 when a command requires a repository and none exists", async () => {
+    const { err, invoke } = harness();
+
+    expect(await invoke("init")).toBe(EXIT_CODES.precondition);
+    expect(err.text()).toContain("Not inside a git repository");
+  });
+
+  it("exits 5 when the config file is unreadable", async () => {
+    const hosts = fakeHosts({
+      fs: fakeFileSystem({
+        "/workspace/demo/.git/HEAD": "",
+        "/workspace/demo/orchestrai.config.json": "{ broken",
+      }),
+    });
+    const { invoke } = harness(undefined, hosts);
+
+    expect(await invoke("config")).toBe(EXIT_CODES.configuration);
+  });
+
+  it("runs init then config end to end", async () => {
+    const fs = fakeFileSystem({ "/workspace/demo/.git/HEAD": "" });
+    const { out, invoke } = harness(undefined, fakeHosts({ fs }));
+
+    expect(await invoke("init")).toBe(EXIT_CODES.success);
+    expect(fs.files.has("/workspace/demo/orchestrai.config.json")).toBe(true);
+
+    out.lines.length = 0;
+    expect(await invoke("config", "--json")).toBe(EXIT_CODES.success);
+    expect(JSON.parse(out.text())).toMatchObject({
+      values: { provider: "anthropic" },
+      sources: { provider: "file" },
+    });
+  });
+
+  it("applies --set overrides at the highest precedence", async () => {
+    const fs = fakeFileSystem({
+      "/workspace/demo/.git/HEAD": "",
+      "/workspace/demo/orchestrai.config.json": '{"provider":"openai"}',
+    });
+    const { out, invoke } = harness(undefined, fakeHosts({ fs }));
+
+    await invoke("config", "--json", "--set", "provider=gemini");
+
+    expect(JSON.parse(out.text())).toMatchObject({
+      values: { provider: "gemini" },
+      sources: { provider: "flag" },
+    });
   });
 });

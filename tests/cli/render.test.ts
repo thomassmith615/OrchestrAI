@@ -30,6 +30,19 @@ describe("renderHuman", () => {
     );
   });
 
+  it("appends a string detail after the verdict", () => {
+    const output = renderHuman({
+      fields: [
+        { label: "Node", value: "22.22.2", status: "pass" },
+        { label: "Git", value: "not found", status: "fail" },
+      ],
+    });
+
+    expect(output).toBe(
+      ["Node:  PASS  22.22.2", "Git:   FAIL  not found"].join("\n"),
+    );
+  });
+
   it("renders null values without a status as a dash", () => {
     expect(renderHuman({ fields: [{ label: "Branch", value: null }] })).toBe(
       "Branch:  -",

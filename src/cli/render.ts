@@ -14,12 +14,20 @@ const STATUS_LABELS: Record<FieldStatus, string> = {
   info: "INFO",
 };
 
+/**
+ * A status renders as an uppercase verdict. When the field also carries a
+ * string detail it follows the verdict, so that `doctor` can report both a
+ * judgement and the reason for it on one line.
+ */
 function formatValue(
   value: string | number | boolean | null,
   status: FieldStatus | undefined,
 ): string {
   if (status !== undefined) {
-    return STATUS_LABELS[status];
+    const verdict = STATUS_LABELS[status];
+    return typeof value === "string" && value.length > 0
+      ? `${verdict}  ${value}`
+      : verdict;
   }
   if (value === null) {
     return "-";

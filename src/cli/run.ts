@@ -1,10 +1,12 @@
 /**
  * CLI execution boundary.
  *
- * Translates thrown values and command results into exit codes. Nothing above
- * this layer calls `process.exit`.
+ * Resolves the workspace and configuration once, then translates thrown values
+ * and command results into exit codes. Nothing above this layer calls
+ * `process.exit`.
  */
 import { createProgram } from "./program.js";
+import { buildBaseContext } from "./context.js";
 import { readGlobalFlags } from "./globals.js";
 import {
   EXIT_CODES,
@@ -13,7 +15,9 @@ import {
   isOrchestraiError,
 } from "../core/errors.js";
 import { createLogger } from "../core/logger.js";
+import { nodeHosts } from "../core/hosts.js";
 import { createRegistry } from "../engine/index.js";
+import type { Hosts } from "../core/hosts.js";
 import type { CommandRegistry } from "../engine/registry.js";
 import type { ExitCode } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
@@ -23,6 +27,7 @@ export interface RunOptions {
   readonly argv: readonly string[];
   readonly logger?: Logger;
   readonly registry?: CommandRegistry;
+  readonly hosts?: Hosts;
   readonly cwd?: string;
 }
 
@@ -47,9 +52,15 @@ function isCommanderExitError(value: unknown): value is CommanderExitError {
 
 export async function run(options: RunOptions): Promise<ExitCode> {
   const flags = readGlobalFlags(options.argv);
-  const logger = options.logger ?? createLogger({ level: flags.level });
+  const hosts = options.hosts ?? nodeHosts();
   const registry = options.registry ?? createRegistry();
   const cwd = flags.cwd ?? options.cwd ?? process.cwd();
+
+  const base = buildBaseContext(cwd, hosts, flags.overrides);
+
+  // Flags beat configuration, which beats the built-in default.
+  const level = flags.level ?? base.config?.values.logLevel ?? "info";
+  const logger = options.logger ?? createLogger({ level });
 
   let exitCode: ExitCode = EXIT_CODES.success;
 
@@ -57,7 +68,7 @@ export async function run(options: RunOptions): Promise<ExitCode> {
     registry,
     logger,
     flags,
-    cwd,
+    base,
     onExitCode: (code: ExitCode): void => {
       exitCode = code;
     },

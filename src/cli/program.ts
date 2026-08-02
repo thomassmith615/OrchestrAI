@@ -7,9 +7,11 @@
  */
 import { Command } from "commander";
 import { GLOBAL_OPTIONS } from "./globals.js";
+import { enforceRequirements } from "./context.js";
 import { render } from "./render.js";
 import { EXIT_CODES } from "../core/errors.js";
 import { packageDescription, packageVersion } from "../core/manifest.js";
+import type { BaseContext } from "./context.js";
 import type { GlobalFlags } from "./globals.js";
 import type { CommandDefinition } from "../engine/command.js";
 import type { CommandRegistry } from "../engine/registry.js";
@@ -20,7 +22,7 @@ export interface ProgramOptions {
   readonly registry: CommandRegistry;
   readonly logger: Logger;
   readonly flags: GlobalFlags;
-  readonly cwd: string;
+  readonly base: BaseContext;
   /** Receives the exit code produced by a command result. */
   readonly onExitCode: (code: ExitCode) => void;
 }
@@ -39,9 +41,7 @@ function buildCommand(
 
   for (const argument of definition.args ?? []) {
     const token =
-      argument.required === false
-        ? `[${argument.name}]`
-        : `<${argument.name}>`;
+      argument.required === false ? `[${argument.name}]` : `<${argument.name}>`;
     command.argument(token, argument.description);
   }
 
@@ -52,14 +52,19 @@ function buildCommand(
   applyGlobalOptions(command);
 
   command.action(async (...invocation: unknown[]): Promise<void> => {
+    enforceRequirements(definition.requires, options.base);
+
     const positional = invocation.slice(0, definition.args?.length ?? 0);
-    const parsed = command.opts();
 
     const result = await definition.execute({
-      cwd: options.cwd,
+      cwd: options.base.cwd,
       logger: options.logger,
-      options: parsed,
+      options: command.opts(),
       args: positional.map((value) => String(value)),
+      hosts: options.base.hosts,
+      workspace: options.base.workspace,
+      config: options.base.config,
+      configError: options.base.configError,
     });
 
     const output = render(result, options.flags.json);

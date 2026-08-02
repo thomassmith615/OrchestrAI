@@ -4,13 +4,40 @@
  * Every client of Orchestrai (the CLI today, the dashboard and API later)
  * imports from here rather than reaching into internal module paths.
  */
-export { createRegistry, CommandRegistry, ok } from "./engine/index.js";
+export {
+  createRegistry,
+  CommandRegistry,
+  ok,
+  requireConfig,
+  requireWorkspace,
+} from "./engine/index.js";
 export { createProgram } from "./cli/program.js";
 export { run } from "./cli/run.js";
+export { buildBaseContext, enforceRequirements } from "./cli/context.js";
 export { render, renderHuman, renderJson } from "./cli/render.js";
 export { readGlobalFlags, GLOBAL_OPTIONS } from "./cli/globals.js";
 export { createLogger, isLogLevel, LOG_LEVELS } from "./core/logger.js";
 export { describeEnvironment } from "./core/environment.js";
+export {
+  nodeFileSystem,
+  nodeHosts,
+  nodeProcessHost,
+} from "./core/hosts.js";
+export {
+  CONFIG_FIELDS,
+  CONFIG_KEYS,
+  ConfigurationError,
+  DEFAULT_CONFIG,
+  isConfigKey,
+  parseOverrides,
+  resolveConfig,
+  serializeConfig,
+} from "./core/config/index.js";
+export {
+  CONFIG_FILE_NAME,
+  STATE_DIR_NAME,
+  resolveWorkspace,
+} from "./core/workspace.js";
 export {
   describeError,
   errorToJson,
@@ -31,14 +58,31 @@ export type {
   CommandContext,
   CommandDefinition,
   CommandOption,
+  CommandRequirements,
   CommandResult,
   FieldStatus,
   Report,
   ReportField,
 } from "./engine/index.js";
+export type { BaseContext } from "./cli/context.js";
 export type { ProgramOptions } from "./cli/program.js";
 export type { RunOptions } from "./cli/run.js";
 export type { GlobalFlags } from "./cli/globals.js";
+export type {
+  ConfigKey,
+  ConfigSource,
+  ConfigValues,
+  FieldSpec,
+  ResolvedConfig,
+} from "./core/config/index.js";
+export type {
+  EnvHost,
+  FileSystemHost,
+  Hosts,
+  ProcessHost,
+  ProcessResult,
+} from "./core/hosts.js";
+export type { Workspace } from "./core/workspace.js";
 export type { Logger, LoggerOptions, LogLevel, LogSink } from "./core/logger.js";
 export type {
   EnvironmentHost,

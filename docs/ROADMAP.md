@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 1 complete. Next up: Milestone 2.
+**Current position:** Milestone 2 complete. Next up: Milestone 3.
 
 ---
 
@@ -24,7 +24,7 @@ milestone, and implement the next unchecked one.
   Ships `orch info`. Definition of Done is executable as `npm run verify`.
   See `docs/CLI.md` for the command surface and output contract.
 
-- [ ] **M2. Configuration, workspace, and diagnostics**
+- [x] **M2. Configuration, workspace, and diagnostics**
   Schema validated `orchestrai.config.json` with layered precedence (defaults,
   project file, environment, flags) and `config show` reporting the source of
   each value. Workspace resolution: locate the project root, require git,
@@ -135,3 +135,4 @@ at a small change rather than a large one.
 | 2026-08-01 | Initial Version 1 roadmap defined (25 milestones). Milestone 1 complete. |
 | 2026-08-01 | Consolidated to 12 milestones. Verification gates moved ahead of context packing; project memory moved after the end to end loop. Scope unchanged. |
 | 2026-08-02 | CLI adopted as the primary interface. Binary renamed to `orch`. Milestone 1 reimplemented around a neutral command contract. Command surface mapped to milestones in `docs/CLI.md`. |
+| 2026-08-02 | Milestone 2 complete: configuration layering with source tracking, workspace resolution, declared command preconditions, `orch init`, `orch doctor`, `orch config`. |
