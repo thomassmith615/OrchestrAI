@@ -5,8 +5,20 @@
  * through one of these interfaces so that commands are testable without
  * touching the machine they run on. See ADR 0003.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
+
+export interface DirEntry {
+  readonly name: string;
+  readonly isDirectory: boolean;
+}
 
 export interface FileSystemHost {
   exists(path: string): boolean;
@@ -14,6 +26,10 @@ export interface FileSystemHost {
   writeFile(path: string, content: string): void;
   /** Creates the directory and any missing parents. */
   mkdir(path: string): void;
+  /** Immediate children of a directory. Order is not guaranteed. */
+  readDir(path: string): readonly DirEntry[];
+  /** Size in bytes. Returns 0 for anything unreadable. */
+  size(path: string): number;
 }
 
 export interface ProcessResult {
@@ -63,6 +79,23 @@ export const nodeFileSystem: FileSystemHost = {
   },
   mkdir: (path: string): void => {
     mkdirSync(path, { recursive: true });
+  },
+  readDir: (path: string): readonly DirEntry[] => {
+    try {
+      return readdirSync(path, { withFileTypes: true }).map((entry) => ({
+        name: entry.name,
+        isDirectory: entry.isDirectory(),
+      }));
+    } catch {
+      return [];
+    }
+  },
+  size: (path: string): number => {
+    try {
+      return statSync(path).size;
+    } catch {
+      return 0;
+    }
   },
 };
 

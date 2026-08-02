@@ -11,6 +11,7 @@ import { infoCommand } from "./commands/info.js";
 import { initCommand } from "./commands/init.js";
 import { providerAddCommand } from "./commands/provider-add.js";
 import { providersCommand } from "./commands/providers.js";
+import { statusCommand } from "./commands/status.js";
 
 export function createRegistry(): CommandRegistry {
   const registry = new CommandRegistry();
@@ -21,6 +22,7 @@ export function createRegistry(): CommandRegistry {
   registry.register(initCommand);
   registry.register(providerAddCommand);
   registry.register(providersCommand);
+  registry.register(statusCommand);
 
   return registry;
 }

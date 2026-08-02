@@ -7,6 +7,19 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 4: repository scanner and toolchain fingerprint.
+  - Filesystem walk with gitignore evaluation, including nested ignore files,
+    negation, anchoring, and directory-only patterns. Ignored directories are
+    pruned rather than traversed.
+  - Language detection by extension and filename, binary classification, a
+    per-file size cap, and a file count cap that reports truncation.
+  - Toolchain detection for node (npm, pnpm, yarn, bun), java (maven, gradle),
+    python (poetry, uv, pip), go, and rust, plus CI system detection.
+    Undetected commands report null rather than a guess. See ADR 0007.
+  - `readDir` and `size` on the filesystem host.
+  - `orch status`, moved forward from Milestone 5 so that the scanner has an
+    observable surface.
+
 - Milestone 3: provider layer and the Anthropic provider.
   - `Provider` interface with normalized `CompletionRequest`,
     `CompletionResult`, streaming chunks, capability flags, and a

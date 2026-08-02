@@ -46,6 +46,7 @@ describe("createRegistry", () => {
       "init",
       "provider add",
       "providers",
+      "status",
     ]);
   });
 });

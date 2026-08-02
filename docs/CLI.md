@@ -37,7 +37,7 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch config` | Inspect resolved configuration and its sources | M2, available |
 | `orch providers` | Display available AI providers, `--verify` for a live check | M3, available |
 | `orch provider add <name>` | Select and configure an AI provider | M3, available |
-| `orch status` | Repository health, milestone progress, providers, pending work | M5 |
+| `orch status` | Repository inventory, toolchain, and provider | M4, available |
 | `orch build` | Execute the configured build pipeline | M5 |
 | `orch test` | Execute all configured validation | M5 |
 | `orch review` | Generate an engineering summary for human review | M7 |
@@ -100,6 +100,24 @@ orchestration without spending anything: `orch provider add mock`.
 
 `--verify` propagates the provider's exit code, so a bad key exits 5 and a
 transport failure exits 1.
+
+## Repository awareness
+
+`orch status` reports what the repository contains and how it builds:
+
+```bash
+orch status
+orch status --json | jq '.toolchain'
+orch status --languages 10
+```
+
+The scanner honours `.gitignore` (including nested ones) plus any patterns in
+the `ignore` setting. Detection is conservative: a command that was not found
+reports as `-` rather than a guess, and Milestone 5 skips gates it has no
+command for.
+
+Supported ecosystems: node (npm, pnpm, yarn, bun), java (maven, gradle),
+python (poetry, uv, pip), go, rust.
 
 ## Preconditions
 

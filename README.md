@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 3 of 12 is complete.
+Version 1 is under construction. Milestone 4 of 12 is complete.
 
 ## Requirements
 
@@ -38,12 +38,13 @@ orch info
 | `orch config` | Show resolved settings and the layer each came from |
 | `orch providers` | List AI providers, `--verify` for a live check |
 | `orch provider add <name>` | Select and configure a provider |
+| `orch status` | Repository inventory, toolchain, and configured provider |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`status`, `next`, `milestone`, `review`, `test`,
-`build`, `memory`, `history`, `plugins`, `dashboard`, `update`) is
+The full planned surface (`next`, `milestone`, `review`, `test`, `build`,
+`memory`, `history`, `plugins`, `dashboard`, `update`) is
 specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
 one. Planned commands are not stubbed: help output lists only what works.
 
@@ -86,6 +87,7 @@ The `mock` provider is deterministic and offline: `orch provider add mock`.
 ```
 src/core/     errors and exit codes, logging, injectable hosts, config, workspace
 src/providers/  one file per provider behind a single interface, plus registry
+src/repo/     scanner, gitignore evaluation, language and toolchain detection
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

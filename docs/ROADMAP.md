@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 3 complete. Next up: Milestone 4.
+**Current position:** Milestone 4 complete. Next up: Milestone 5.
 
 ---
 
@@ -42,13 +42,14 @@ milestone, and implement the next unchecked one.
 
 ## Part 2: Make it useful (M4 to M7)
 
-- [ ] **M4. Repository scanner and toolchain fingerprint**
+- [x] **M4. Repository scanner and toolchain fingerprint**
   Filesystem walk with gitignore and config ignore rules, language detection,
   size and binary limits, stable file inventory. Detection of build system,
   package manager, test runner, linter, and CI from manifests (`package.json`,
   `pom.xml`, `pyproject.toml`, `go.mod`). This is what makes the platform
-  polyglot without the implementation being polyglot. No user facing command;
-  feeds `orch status`.
+  polyglot without the implementation being polyglot.
+  Delivers `orch status` in its inventory form: what the repository contains
+  and how it builds. M5 adds git branch state and the pass or fail verdicts.
 
 - [ ] **M5. Git integration and verification gates**
   Status, diff, branch, and commit metadata. Dirty tree detection as a
@@ -56,7 +57,8 @@ milestone, and implement the next unchecked one.
   detected build, typecheck, lint, and test commands from M4, capture
   structured results, fail loudly. Pulled forward deliberately so that every
   later milestone can be judged objectively rather than by reading output.
-  Delivers `orch build`, `orch test`, `orch status`. Gate failures exit 3.
+  Delivers `orch build`, `orch test`, and the verdict rows of `orch status`.
+  Gate failures exit 3.
 
 - [ ] **M6. Context packer and prompt system**
   Relevance ranking and token budgeting, reporting what was included, what was
@@ -137,3 +139,4 @@ at a small change rather than a large one.
 | 2026-08-02 | CLI adopted as the primary interface. Binary renamed to `orch`. Milestone 1 reimplemented around a neutral command contract. Command surface mapped to milestones in `docs/CLI.md`. |
 | 2026-08-02 | Milestone 2 complete: configuration layering with source tracking, workspace resolution, declared command preconditions, `orch init`, `orch doctor`, `orch config`. |
 | 2026-08-02 | Milestone 3 complete: provider interface and registry, deterministic mock provider, Anthropic provider with streaming and usage accounting, `orch providers`, `orch provider add`. |
+| 2026-08-02 | Milestone 4 complete: repository scanner with gitignore evaluation, language detection, toolchain fingerprint, `orch status`. `orch status` moved forward from M5 so the milestone has an observable surface. |

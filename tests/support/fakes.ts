@@ -5,6 +5,7 @@
 import { dirname } from "node:path";
 import { createLogger } from "../../src/core/logger.js";
 import type {
+  DirEntry,
   EnvHost,
   FileSystemHost,
   Hosts,
@@ -28,8 +29,16 @@ export function fakeFileSystem(
   const files = new Map<string, string>(Object.entries(seed));
   const dirs = new Set<string>();
 
+  const registerAncestors = (path: string): void => {
+    let parent = dirname(path);
+    while (parent !== "/" && parent !== "." && !dirs.has(parent)) {
+      dirs.add(parent);
+      parent = dirname(parent);
+    }
+  };
+
   for (const path of files.keys()) {
-    dirs.add(dirname(path));
+    registerAncestors(path);
   }
 
   return {
@@ -45,11 +54,44 @@ export function fakeFileSystem(
     },
     writeFile: (path: string, content: string): void => {
       files.set(path, content);
-      dirs.add(dirname(path));
+      registerAncestors(path);
     },
     mkdir: (path: string): void => {
       dirs.add(path);
+      registerAncestors(`${path}/x`);
     },
+    readDir: (path: string): readonly DirEntry[] => {
+      const prefix = path.endsWith("/") ? path : `${path}/`;
+      const seen = new Map<string, boolean>();
+
+      for (const file of files.keys()) {
+        if (!file.startsWith(prefix)) {
+          continue;
+        }
+        const rest = file.slice(prefix.length);
+        const slash = rest.indexOf("/");
+        if (slash < 0) {
+          seen.set(rest, false);
+        } else {
+          seen.set(rest.slice(0, slash), true);
+        }
+      }
+
+      for (const dir of dirs) {
+        if (!dir.startsWith(prefix)) {
+          continue;
+        }
+        const rest = dir.slice(prefix.length);
+        const slash = rest.indexOf("/");
+        seen.set(slash < 0 ? rest : rest.slice(0, slash), true);
+      }
+
+      return [...seen.entries()].map(([name, isDirectory]) => ({
+        name,
+        isDirectory,
+      }));
+    },
+    size: (path: string): number => Buffer.byteLength(files.get(path) ?? "", "utf8"),
   };
 }
 
