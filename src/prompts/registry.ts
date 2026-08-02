@@ -34,6 +34,18 @@ export const PROMPTS: readonly PromptDefinition[] = [
     file: "analyze.md",
     description: "Repository architecture and health review",
   },
+  {
+    id: "review",
+    version: 1,
+    file: "review.md",
+    description: "Engineering summary written for a human reviewer",
+  },
+  {
+    id: "propose",
+    version: 1,
+    file: "propose.md",
+    description: "Implement a task and emit full file replacements",
+  },
 ];
 
 export function findPrompt(id: string): PromptDefinition | undefined {

@@ -7,6 +7,34 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 7: engineering review and change proposals.
+  - `orch review`, a read-only engineering summary from the configured
+    provider.
+  - Change proposals using full-file replacement blocks rather than diffs, with
+    path validation that rejects anything outside the repository. See ADR 0010.
+  - Proposals staged as real files under `.orchestrai/proposals/<id>/`, so
+    diffs come from `git diff --no-index` rather than being reconstructed.
+  - `orch propose`, `propose show`, `propose list`, `propose apply`,
+    `propose reject`. Applying requires a clean working tree and runs the
+    validation gates afterwards, exiting 3 on failure.
+  - The mock provider answers the change protocol, so the whole loop runs
+    offline with no API key.
+  - `review` and `propose` prompt templates.
+
+### Changed
+
+- The CLI is documented as the first interface onto the engine rather than the
+  product itself.
+- Command output notes carry state and consequences only. Instructional notes
+  that duplicated `--help` were removed.
+- `CommandDefinition.execute` is now guaranteed to return a promise: the
+  registry converts a synchronous throw into a rejection.
+
+### Fixed
+
+- The test filesystem double registered only the immediate parent of a new
+  path, so intermediate directories could appear not to exist.
+
 - Milestone 6: context packer and prompt system.
   - Explainable relevance ranking with no embeddings or model call. Every
     ranked file carries the reasons that produced its score.

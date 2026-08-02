@@ -60,11 +60,8 @@ export const providerAddCommand: CommandDefinition<ProviderAddData> = {
     const credentialPresent = credential !== undefined && credential !== "";
 
     const notes = credentialPresent
-      ? ["Run `orch providers --verify` to make a live request."]
-      : [
-          `Set ${descriptor.credentialEnv} in your environment before use.`,
-          "Credentials are never written to the config file.",
-        ];
+      ? []
+      : [`${descriptor.credentialEnv} must be set in the environment before use.`];
 
     return Promise.resolve({
       data: {

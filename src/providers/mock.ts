@@ -22,11 +22,30 @@ function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
 
+/**
+ * When the prompt asks for change blocks, the mock answers with a valid one.
+ * That is the point of this provider: the whole propose, review, apply, verify
+ * loop can be exercised offline and deterministically, without a key.
+ */
+const MOCK_PROPOSAL = [
+  "Adding a marker file so the loop can be exercised offline.",
+  "",
+  "<<<FILE MOCK.md",
+  "# Mock proposal",
+  "",
+  "Written by the deterministic mock provider.",
+  ">>>",
+].join("\n");
+
 function renderResponse(request: CompletionRequest): string {
   const last = request.messages.at(-1);
 
   if (last === undefined) {
     throw new ProviderError("mock", "request", "No messages supplied");
+  }
+
+  if (last.content.includes("<<<FILE")) {
+    return MOCK_PROPOSAL;
   }
 
   return `mock:${last.content}`;

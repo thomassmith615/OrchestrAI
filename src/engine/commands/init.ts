@@ -48,8 +48,8 @@ export const initCommand: CommandDefinition<InitData> = {
 
     const notes =
       configExists && !force
-        ? ["Configuration already existed. Re-run with --force to reset it."]
-        : ["Run `orch doctor` to verify the setup."];
+        ? ["Configuration already existed and was left alone."]
+        : [];
 
     return Promise.resolve({
       data: {

@@ -127,7 +127,7 @@ describe("statusCommand", () => {
     const result = await statusCommand.execute(context({ "/repo/src/a.ts": "x" }));
 
     expect(result.data.gates).toBeNull();
-    expect(result.report.notes?.join(" ")).toContain("--verify");
+    expect(result.report.notes?.join(" ")).toContain("Gates have not run");
   });
 
   it("does not run gates by default", async () => {

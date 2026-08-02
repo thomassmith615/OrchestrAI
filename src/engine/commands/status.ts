@@ -183,7 +183,7 @@ export const statusCommand: CommandDefinition<StatusData> = {
 
     const notes: string[] = [];
     if (gates === null) {
-      notes.push("Gates have not run. Use `orch status --verify` or `orch test`.");
+      notes.push("Gates have not run.");
     } else if (!shouldVerify) {
       notes.push(`Gate results from ${describeAge(context.hosts.clock.now(), gates.startedAt)}.`);
     } else if (gates.ok) {
@@ -196,7 +196,7 @@ export const statusCommand: CommandDefinition<StatusData> = {
       notes.push("File cap reached; inventory is incomplete.");
     }
     if (toolchain.ecosystem === "unknown") {
-      notes.push("No known manifest found; verification gates will be limited.");
+      notes.push("No known manifest; verification gates unavailable.");
     }
 
     return Promise.resolve({

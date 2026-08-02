@@ -102,6 +102,21 @@ export function ok<TData>(data: TData, report: Report): CommandResult<TData> {
 }
 
 /**
+ * Runs a synchronous command body and returns a promise, converting a throw
+ * into a rejection. `execute` promises to return a promise; a synchronous
+ * throw breaks that for any caller not already inside an async frame.
+ */
+export function attempt<TData>(
+  body: () => CommandResult<TData> | Promise<CommandResult<TData>>,
+): Promise<CommandResult<TData>> {
+  try {
+    return Promise.resolve(body());
+  } catch (error: unknown) {
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+  }
+}
+
+/**
  * Narrows a context whose requirements have already been enforced by the
  * surface, so commands can use `workspace` and `config` without null checks.
  */

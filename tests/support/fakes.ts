@@ -30,9 +30,12 @@ export function fakeFileSystem(
   const files = new Map<string, string>(Object.entries(seed));
   const dirs = new Set<string>();
 
+  // Walk all the way to the root. Stopping at the first known ancestor is
+  // wrong: an immediate parent can be registered while its own parents are
+  // not, which makes `exists` lie about intermediate directories.
   const registerAncestors = (path: string): void => {
     let parent = dirname(path);
-    while (parent !== "/" && parent !== "." && !dirs.has(parent)) {
+    while (parent !== dirname(parent)) {
       dirs.add(parent);
       parent = dirname(parent);
     }

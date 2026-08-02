@@ -133,10 +133,9 @@ export const providersCommand: CommandDefinition<ProvidersData> = {
       };
     });
 
-    const notes = [
-      `Selected: ${selected}${model === null ? "" : ` (${model})`}`,
-      ...(shouldVerify ? [] : ["Run with --verify to make a live request."]),
-    ];
+    // Notes carry state, not instructions. The selection is state; telling
+    // the operator that --verify exists is what --help is for.
+    const notes = [`Selected: ${selected}${model === null ? "" : ` (${model})`}`];
 
     return {
       data: { selected, model, providers },

@@ -11,7 +11,15 @@ import { contextCommand } from "./commands/context.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { infoCommand } from "./commands/info.js";
 import { initCommand } from "./commands/init.js";
+import {
+  proposeApplyCommand,
+  proposeCommand,
+  proposeListCommand,
+  proposeRejectCommand,
+  proposeShowCommand,
+} from "./commands/propose.js";
 import { providerAddCommand } from "./commands/provider-add.js";
+import { reviewCommand } from "./commands/review.js";
 import { providersCommand } from "./commands/providers.js";
 import { statusCommand } from "./commands/status.js";
 
@@ -25,7 +33,13 @@ export function createRegistry(): CommandRegistry {
   registry.register(infoCommand);
   registry.register(initCommand);
   registry.register(providerAddCommand);
+  registry.register(proposeCommand);
+  registry.register(proposeApplyCommand);
+  registry.register(proposeListCommand);
+  registry.register(proposeRejectCommand);
+  registry.register(proposeShowCommand);
   registry.register(providersCommand);
+  registry.register(reviewCommand);
   registry.register(statusCommand);
   registry.register(testCommand);
 

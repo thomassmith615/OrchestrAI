@@ -2,7 +2,11 @@
 
 ## Primary user experience
 
-The command line interface is the primary interface to Orchestraᵢ. Everything
+Orchestraᵢ is a platform that currently exposes a CLI. The `orch` command is
+interface number one; the dashboard, REST API, MCP server, and editor
+extensions are later interfaces onto the same engine.
+
+The command line is the primary interface. Everything
 else (dashboard, APIs, integrations) is built around the CLI rather than
 replacing it. The CLI exposes nearly every capability of the platform. The web
 dashboard is a visualization and monitoring layer.
@@ -26,7 +30,8 @@ collection (`orch provider add`).
 
 ## Command surface
 
-The full Version 1 surface, with the milestone that delivers each command.
+The full Version 1 surface of interface number one, with the milestone that
+delivers each command.
 Commands not marked as available do not exist yet and are not stubbed.
 
 | Command | Description | Milestone |
@@ -36,12 +41,14 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch doctor` | Run diagnostic checks on the repository configuration | M2, available |
 | `orch config` | Inspect resolved configuration and its sources | M2, available |
 | `orch context` | Show what would be sent to a provider, and what would be dropped | M6, available |
+| `orch propose <task>` | Stage a change for review. Writes nothing | M7, available |
+| `orch propose show\|list\|apply\|reject` | The proposal lifecycle | M7, available |
 | `orch providers` | Display available AI providers, `--verify` for a live check | M3, available |
 | `orch provider add <name>` | Select and configure an AI provider | M3, available |
 | `orch status` | Repository inventory, toolchain, and provider | M4, available |
 | `orch build` | Execute the configured build pipeline | M5, available |
 | `orch test` | Execute all configured validation | M5, available |
-| `orch review` | Generate an engineering summary for human review | M7 |
+| `orch review` | Generate an engineering summary for human review | M7, available |
 | `orch roadmap` | Display the roadmap and milestone progression | M8 |
 | `orch milestone` | Execute the current milestone workflow | M8 |
 | `orch next` | Determine the next milestone and prepare the workflow | M9 |
@@ -51,9 +58,10 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch dashboard` | Launch the optional local web dashboard | M12 |
 | `orch update` | Update Orchestraᵢ | M12 |
 
-`orch config` and `orch context` are additions to the original surface, on the
-same grounds: configuration precedence and context packing are both invisible
-without a way to inspect them.
+`orch config`, `orch context`, and the `orch propose` family are additions to
+the original surface. The first two make otherwise invisible behaviour
+inspectable; the third gives the proposal lifecycle a surface, which
+`orch milestone` needs in order to drive it.
 
 ## Global flags
 
@@ -167,6 +175,34 @@ setting; 25 percent is reserved for the system prompt and the response, so a
 Every included file lists why it was chosen. Files too large for the remaining
 budget are skipped, never truncated, and appear under `--dropped` with their
 token cost.
+
+## The write path
+
+Model output never reaches the working tree directly.
+
+```bash
+orch propose "add retry with backoff to the http host"
+orch propose show              # full diff, newest open proposal
+orch propose apply             # write it, then run the gates
+orch propose reject            # throw it away
+orch propose list
+```
+
+`propose` stages complete file contents under `.orchestrai/proposals/<id>/` and
+writes nothing else. `apply` refuses a dirty working tree (exit 4) so that
+`git checkout .` stays a complete undo, then runs the validation gates and exits
+3 if they fail. Files are left in place on failure; the clean-tree precondition
+is the escape hatch.
+
+Nothing is ever committed. Orchestraᵢ writes files; you decide what becomes
+history.
+
+The `mock` provider answers the change protocol with a valid block, so the whole
+loop runs offline with no API key:
+
+```bash
+orch provider add mock && orch propose "anything"
+```
 
 ## Preconditions
 

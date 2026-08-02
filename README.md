@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 6 of 12 is complete.
+Version 1 is under construction. Milestone 7 of 12 is complete.
 
 ## Requirements
 
@@ -29,7 +29,14 @@ npm link              # makes `orch` available on PATH
 orch info
 ```
 
-## Available commands
+## The first interface
+
+The `orch` CLI is interface number one. The engine underneath it is surface
+agnostic: commands are neutral definitions in `src/engine`, and a dashboard,
+REST API, MCP server, or editor extension consumes the same registry without
+touching command code. See [docs/CLI.md](docs/CLI.md).
+
+Available today:
 
 | Command | Description |
 | --- | --- |
@@ -42,12 +49,15 @@ orch info
 | `orch context` | Show what would be sent to a provider, and what would not |
 | `orch build` | Run the detected build command |
 | `orch test` | Run all detected validation (typecheck, lint, test) |
+| `orch review` | Ask the provider for an engineering summary |
+| `orch propose <task>` | Stage a change for review. Writes nothing |
+| `orch propose apply` | Write a reviewed proposal and run the gates |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
-The full planned surface (`next`, `milestone`, `review`, `memory`, `history`,
-`plugins`, `dashboard`, `update`) is
+The full planned surface (`next`, `milestone`, `memory`, `history`, `plugins`,
+`dashboard`, `update`) is
 specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
 one. Planned commands are not stubbed: help output lists only what works.
 
@@ -94,6 +104,7 @@ src/repo/     scanner, gitignore evaluation, toolchain detection, git state
 src/gates/    gate execution against the detected toolchain, result persistence
 src/context/  relevance ranking, token budgeting, context assembly
 src/prompts/  versioned .md templates, typed interpolation, registry
+src/proposals/ change parsing, staging, diffing, application. The write path.
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

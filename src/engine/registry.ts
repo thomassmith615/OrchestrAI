@@ -6,7 +6,8 @@
  * here and nowhere else.
  */
 import { OrchestraiError } from "../core/errors.js";
-import type { CommandDefinition } from "./command.js";
+import { attempt } from "./command.js";
+import type { CommandContext, CommandDefinition, CommandResult } from "./command.js";
 
 export class CommandRegistry {
   private readonly commands = new Map<string, CommandDefinition>();
@@ -18,7 +19,13 @@ export class CommandRegistry {
         { code: "engine.duplicate_command" },
       );
     }
-    this.commands.set(definition.name, definition);
+    // Surfaces call `execute` directly, so the promise contract is enforced
+    // here rather than trusted in every command.
+    this.commands.set(definition.name, {
+      ...definition,
+      execute: (context: CommandContext): Promise<CommandResult> =>
+        attempt(() => definition.execute(context)),
+    });
     return this;
   }
 

@@ -45,7 +45,7 @@ describe("initCommand", () => {
     expect(fs.files.get("/repo/orchestrai.config.json")).toBe(
       '{"provider":"openai"}',
     );
-    expect(result.report.notes?.[0]).toMatch(/--force/);
+    expect(result.report.notes?.[0]).toMatch(/already existed/);
   });
 
   it("resets the config when --force is supplied", async () => {

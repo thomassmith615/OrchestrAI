@@ -118,7 +118,7 @@ function execute(
         notes.push(`--- ${result.name} ---`, result.output);
       }
     }
-    notes.push(`${String(run.failed)} gate(s) failed.`);
+    notes.push(`${String(run.failed)} of ${String(run.results.length)} gates failed.`);
   } else if (run.results.every((result) => result.status === "skipped")) {
     // Asking for validation and getting none is a setup problem, not a pass.
     exitCode = EXIT_CODES.precondition;
@@ -126,7 +126,10 @@ function execute(
       "No commands configured for these gates. Run `orch status` to see what was detected.",
     );
   } else {
-    notes.push(`All gates passed in ${formatDuration(run.durationMs)}.`);
+    const ran = run.results.length - run.skipped;
+    notes.push(
+      `${String(ran)} gates passed in ${formatDuration(run.durationMs)}.`,
+    );
   }
 
   if (!recorded) {

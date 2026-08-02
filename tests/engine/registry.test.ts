@@ -15,8 +15,27 @@ describe("CommandRegistry", () => {
     const registry = new CommandRegistry().register(stub);
 
     expect(registry.has("stub")).toBe(true);
-    expect(registry.get("stub")).toBe(stub);
+    // The registry wraps `execute` to guarantee the promise contract, so the
+    // stored definition is equal to the registered one but not identical.
+    expect(registry.get("stub")).toMatchObject({
+      name: "stub",
+      summary: "Test command",
+    });
     expect(registry.get("missing")).toBeUndefined();
+  });
+
+  it("converts a synchronous throw into a rejection", async () => {
+    const registry = new CommandRegistry().register({
+      name: "boom",
+      summary: "Throws before returning",
+      execute: () => {
+        throw new Error("sync failure");
+      },
+    });
+
+    await expect(
+      registry.get("boom")?.execute({} as never),
+    ).rejects.toThrow("sync failure");
   });
 
   it("rejects duplicate registration", () => {
@@ -46,8 +65,14 @@ describe("createRegistry", () => {
       "doctor",
       "info",
       "init",
+      "propose",
+      "propose apply",
+      "propose list",
+      "propose reject",
+      "propose show",
       "provider add",
       "providers",
+      "review",
       "status",
       "test",
     ]);

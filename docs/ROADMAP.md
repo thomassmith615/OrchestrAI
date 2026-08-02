@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 6 complete. Next up: Milestone 7.
+**Current position:** Milestone 7 complete. Next up: Milestone 8.
 
 ---
 
@@ -74,7 +74,7 @@ milestone, and implement the next unchecked one.
   reviewable patch in a staging area, never a direct write to the working tree.
   Apply, reject, or partially apply after review, with M5 gates run against the
   result. This is the point where the tool stops being a chat window.
-  Delivers `orch review`.
+  Delivers `orch review`, `orch propose`, and `orch propose apply|show|list|reject`.
 
 ## Part 3: Make it a workflow (M8 to M9)
 
@@ -143,3 +143,4 @@ at a small change rather than a large one.
 | 2026-08-02 | Milestone 4 complete: repository scanner with gitignore evaluation, language detection, toolchain fingerprint, `orch status`. `orch status` moved forward from M5 so the milestone has an observable surface. |
 | 2026-08-02 | Milestone 5 complete: git status, commit metadata and diff reading, gate runner with timeouts, persisted gate results, `orch build`, `orch test`, `orch status --verify`. Gate failures exit 3. |
 | 2026-08-02 | Milestone 6 complete: explainable relevance ranking, token budgeting with reserved headroom, file-based versioned prompts, `orch context`. |
+| 2026-08-02 | Milestone 7 complete: change proposals with full-file replacement, staged diffs, clean-tree precondition, gates run after apply. `orch review`, `orch propose` and its sub-commands. |
