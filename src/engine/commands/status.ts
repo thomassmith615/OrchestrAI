@@ -113,7 +113,7 @@ export const statusCommand: CommandDefinition<StatusData> = {
       description: "Run the verification gates now instead of reading the last run",
     },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   execute(context: CommandContext): Promise<CommandResult<StatusData>> {
     const workspace = requireWorkspace(context);

@@ -43,7 +43,7 @@ export const contextCommand: CommandDefinition<ContextData> = {
     { flags: "--print", description: "Print the assembled context itself" },
     { flags: "--prompt <id>", description: "Render a named prompt around the context" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   execute(context: CommandContext): Promise<CommandResult<ContextData>> {
     const workspace = requireWorkspace(context);

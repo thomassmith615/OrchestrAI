@@ -43,7 +43,7 @@ export const roadmapCommand: CommandDefinition<RoadmapData> = {
   options: [
     { flags: "--all", description: "Include completed milestones" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   execute(context: CommandContext): Promise<CommandResult<RoadmapData>> {
     return attempt(() => {

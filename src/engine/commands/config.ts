@@ -28,7 +28,7 @@ function displayValue(value: ConfigValue): string {
 export const configCommand: CommandDefinition<ConfigData> = {
   name: "config",
   summary: "Show the resolved configuration and the source of each value",
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   execute(context: CommandContext): Promise<CommandResult<ConfigData>> {
     const config = requireConfig(context);

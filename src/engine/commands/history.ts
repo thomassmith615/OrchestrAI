@@ -45,7 +45,7 @@ export const historyCommand: CommandDefinition<HistoryData> = {
     { flags: "--limit <count>", description: "How many runs to show (default 10)" },
     { flags: "--runs", description: "Show only the run log" },
   ],
-  requires: { repository: true, config: true, initialized: true },
+  requires: { config: true, initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<HistoryData>> {
     return attempt(() => {

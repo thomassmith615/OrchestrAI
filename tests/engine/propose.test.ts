@@ -90,7 +90,6 @@ describe("proposeCommand", () => {
 
   it("requires initialization so proposals can be stored", () => {
     expect(proposeCommand.requires).toEqual({
-      repository: true,
       config: true,
       initialized: true,
     });

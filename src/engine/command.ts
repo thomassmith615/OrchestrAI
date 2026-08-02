@@ -13,7 +13,7 @@ import type { ResolvedConfig } from "../core/config/index.js";
 import type { ExitCode } from "../core/errors.js";
 import type { Hosts } from "../core/hosts.js";
 import type { Logger } from "../core/logger.js";
-import type { Workspace } from "../core/workspace.js";
+import type { Scope, ScopeKind, Workspace } from "../core/workspace.js";
 
 /** Result state of a reported value, used for aligned status output. */
 export type FieldStatus = "pass" | "fail" | "warn" | "info";
@@ -60,8 +60,18 @@ export interface CommandOption {
  * commands never re-implement the same guard clauses.
  */
 export interface CommandRequirements {
-  /** Must be inside a git repository. Failure exits 4. */
-  readonly repository?: boolean;
+  /**
+   * Which scope the command needs: `"repository"` (must be inside a git
+   * repository, failure exits 4), `"user"` (must be able to resolve the
+   * invoking user's home directory, failure exits 4), or `"either"` (never
+   * fails on scope; resolves to whichever is available). Defaults to
+   * `"repository"` when this object is declared without a value, which is
+   * what kept every Version 1 command's behaviour unchanged when this field
+   * replaced the old `repository: boolean` flag. A command that declares no
+   * `requires` object at all is scope-agnostic and is not affected by this
+   * default. See ADR 0017.
+   */
+  readonly scope?: ScopeKind | "either";
   /** `orch init` must have run. Failure exits 4. */
   readonly initialized?: boolean;
   /** Configuration must load cleanly. Failure exits 5. */
@@ -80,6 +90,14 @@ export interface CommandContext {
   readonly hosts: Hosts;
   /** Null when the working directory is not inside a git repository. */
   readonly workspace: Workspace | null;
+  /**
+   * The scope resolved for this invocation, given what the command declared
+   * in `requires.scope`. Null only when neither a repository nor a
+   * resolvable home directory was available, which precondition enforcement
+   * already turns into a failure for any command that required one
+   * specifically. See ADR 0017.
+   */
+  readonly scope: Scope | null;
   /** Null when configuration failed to load; only tolerated by `doctor`. */
   readonly config: ResolvedConfig | null;
   /** Populated when configuration failed to load. */
@@ -132,4 +150,11 @@ export function requireConfig(context: CommandContext): ResolvedConfig {
     throw new Error("Command requires configuration but none was resolved");
   }
   return context.config;
+}
+
+export function requireScope(context: CommandContext): Scope {
+  if (context.scope === null) {
+    throw new Error("Command requires a scope but none was resolved");
+  }
+  return context.scope;
 }

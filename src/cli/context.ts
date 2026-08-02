@@ -7,10 +7,10 @@
  */
 import { ConfigurationError, resolveConfig } from "../core/config/index.js";
 import { PreconditionError } from "../core/errors.js";
-import { resolveWorkspace } from "../core/workspace.js";
+import { resolveScope, resolveUserScope, resolveWorkspace } from "../core/workspace.js";
 import type { ResolvedConfig } from "../core/config/index.js";
 import type { Hosts } from "../core/hosts.js";
-import type { Workspace } from "../core/workspace.js";
+import type { Scope, Workspace } from "../core/workspace.js";
 import type { CommandRequirements } from "../engine/command.js";
 
 export interface BaseContext {
@@ -45,6 +45,12 @@ export function buildBaseContext(
 /**
  * Throws the appropriate typed error when a command's declared preconditions
  * are not met. Exit codes follow the contract in docs/CLI.md.
+ *
+ * A command that declares no `requires` object at all is scope-agnostic and
+ * is not checked here at all, exactly as in Version 1. A command that
+ * declares `requires` without a `scope` defaults to `"repository"`, which is
+ * what kept every Version 1 command's behaviour unchanged when `scope`
+ * replaced the old `repository: boolean` flag. See ADR 0017.
  */
 export function enforceRequirements(
   requirements: CommandRequirements | undefined,
@@ -54,10 +60,19 @@ export function enforceRequirements(
     return;
   }
 
-  if (requirements.repository === true && base.workspace === null) {
+  const scopeKind = requirements.scope ?? "repository";
+
+  if (scopeKind === "repository" && base.workspace === null) {
     throw new PreconditionError(
       "Not inside a git repository",
       "Run this from a repository, or pass --cwd",
+    );
+  }
+
+  if (scopeKind === "user" && resolveUserScope(base.hosts.env) === null) {
+    throw new PreconditionError(
+      "Could not determine the current user's home directory",
+      "Set the HOME environment variable",
     );
   }
 
@@ -73,4 +88,22 @@ export function enforceRequirements(
       ? base.configError
       : new ConfigurationError("Configuration could not be resolved");
   }
+}
+
+/**
+ * Resolves the scope a command's context will carry, given what it declared.
+ * Called only after `enforceRequirements` has already validated that a
+ * strictly required scope is available, so this never needs to fail — a
+ * command that required nothing simply gets whichever scope is available,
+ * preferring repository scope the way a person standing in a terminal would.
+ */
+export function resolveContextScope(
+  requirements: CommandRequirements | undefined,
+  base: BaseContext,
+): Scope | null {
+  const declared = requirements?.scope;
+  // "either" resolves exactly like declaring nothing: prefer repository,
+  // fall back to user.
+  const kind = declared === "either" ? undefined : declared;
+  return resolveScope(kind, base.workspace, base.hosts.env);
 }

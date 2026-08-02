@@ -29,4 +29,38 @@ describe("infoCommand", () => {
     expect(result.data.repository).toBe("/repo");
     expect(result.data.initialized).toBe(true);
   });
+
+  it("reports the active scope", async () => {
+    const result = await infoCommand.execute(
+      fakeContext({
+        workspace: {
+          root: "/repo",
+          stateDir: "/repo/.orchestrai",
+          configPath: "/repo/orchestrai.config.json",
+          initialized: true,
+        },
+        scope: {
+          kind: "repository",
+          workspace: {
+            root: "/repo",
+            stateDir: "/repo/.orchestrai",
+            configPath: "/repo/orchestrai.config.json",
+            initialized: true,
+          },
+        },
+      }),
+    );
+
+    expect(result.data.scope).toBe("repository");
+    expect(result.report.fields).toContainEqual({
+      label: "Scope",
+      value: "repository",
+    });
+  });
+
+  it("reports a null scope when neither a repository nor a home directory exists", async () => {
+    const result = await infoCommand.execute(fakeContext());
+
+    expect(result.data.scope).toBeNull();
+  });
 });

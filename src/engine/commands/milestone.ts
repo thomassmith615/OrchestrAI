@@ -64,7 +64,7 @@ export const milestoneCommand: CommandDefinition<MilestoneData> = {
     },
     { flags: "--max-tokens <count>", description: "Response budget per call" },
   ],
-  requires: { repository: true, config: true, initialized: true },
+  requires: { config: true, initialized: true },
 
   async execute(context: CommandContext): Promise<CommandResult<MilestoneData>> {
     const workspace = requireWorkspace(context);

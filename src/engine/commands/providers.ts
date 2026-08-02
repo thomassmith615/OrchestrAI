@@ -72,7 +72,7 @@ export const providersCommand: CommandDefinition<ProvidersData> = {
       description: "Make a minimal live request to the selected provider",
     },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   async execute(context: CommandContext): Promise<CommandResult<ProvidersData>> {
     const config = requireConfig(context);

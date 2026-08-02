@@ -67,7 +67,7 @@ allowed to name one. See ADR 0016.
 
 | Package | Responsibility | Introduced |
 | --- | --- | --- |
-| `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace. No AI awareness. | M1, M2 |
+| `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace and scope. No AI awareness. | M1, M2, V2-2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
 | `src/runtime` | Capability contract, `CapabilityRegistry`, activation. Lifecycle only: register, activate, assemble, report. Never names a capability. | V2-1 |
 | `src/capabilities` | First-party capabilities and the composition root that names them (`assembleRuntime`). Engineering is the first; its implementation still lives where M1-M12 put it. | V2-1 |
@@ -100,11 +100,13 @@ allowed to name one. See ADR 0016.
 6. **No console outside the logger.** ESLint enforces this.
 7. **Errors are typed.** Anything reaching the process boundary is an
    `OrchestraiError` with a stable code and an exit code.
-8. **Commands declare preconditions, they do not check them.** `repository`,
+8. **Commands declare preconditions, they do not check them.** `scope`,
    `initialized`, and `config` requirements are enforced by the surface before
-   `execute` runs. See `docs/CLI.md`.
-9. **State lives in `.orchestrai/`.** Memory, roadmap state, and run history are
-   files in the target repository, readable and diffable by humans.
+   `execute` runs. See `docs/CLI.md` and ADR 0017.
+9. **State lives in `.orchestrai/`.** Memory, roadmap state, and run history
+   are files, readable and diffable by humans — inside the target repository
+   for repository-scoped work, or under `~/.orchestrai` for user-scoped work.
+   See ADR 0017.
 10. **Nothing is committed or pushed without explicit human approval.**
    Orchestraᵢ proposes; the operator disposes.
 11. **A capability declares what it offers; the runtime never names one.**
@@ -127,6 +129,18 @@ v1 invocation (`orch status`, `orch next`, ...) is unchanged; that emptiness
 is a backwards-compatibility concession specific to the one capability that
 predates this model, not a pattern to copy. See ADR 0016 and
 `docs/ROADMAP-V2.md`.
+
+## Scope (V2)
+
+A command runs under a **`Scope`**: repository scope, rooted at a git root
+exactly as in Version 1, or **user scope**, rooted at `~/.orchestrai`, with no
+repository anywhere. `CommandRequirements.scope` (`"repository"`, `"user"`,
+or `"either"`, defaulting to `"repository"`) replaces the old
+`repository: boolean` flag; `CommandContext.scope` carries the resolved
+value alongside the still-present `workspace: Workspace | null`. This is what
+lets a future capability's commands declare `scope: "user"` and run with no
+git repository involved at all — the proof V2-6 exists to demonstrate. See
+ADR 0017.
 
 ## Data flow for a milestone run (target state, M9)
 

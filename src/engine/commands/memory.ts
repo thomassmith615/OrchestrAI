@@ -46,7 +46,7 @@ export const memoryCommand: CommandDefinition<MemoryData> = {
     { flags: "--kind <kind>", description: `Filter by kind: ${MEMORY_KINDS.join(", ")}` },
     { flags: "--full", description: "Include the body of each record" },
   ],
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<MemoryData>> {
     return attempt(() => {
@@ -146,7 +146,7 @@ export const memoryAddCommand: CommandDefinition<MemoryAddData> = {
     { flags: "--body <text>", description: "Rationale, in full" },
     { flags: "--tags <list>", description: "Comma separated tags" },
   ],
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<MemoryAddData>> {
     return attempt(() => {
@@ -225,7 +225,7 @@ export interface MemoryVerifyData {
 export const memoryVerifyCommand: CommandDefinition<MemoryVerifyData> = {
   name: "memory verify",
   summary: "Check project memory for damaged or duplicated records",
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<MemoryVerifyData>> {
     return attempt(() => {
@@ -284,7 +284,7 @@ export interface MemoryCompactData {
 export const memoryCompactCommand: CommandDefinition<MemoryCompactData> = {
   name: "memory compact",
   summary: "Rewrite memory, dropping damaged and duplicated records",
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<MemoryCompactData>> {
     return attempt(() => {

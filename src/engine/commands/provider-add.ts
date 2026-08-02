@@ -27,7 +27,7 @@ export const providerAddCommand: CommandDefinition<ProviderAddData> = {
   options: [
     { flags: "--model <id>", description: "Pin a model for this provider" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   execute(context: CommandContext): Promise<CommandResult<ProviderAddData>> {
     const workspace = requireWorkspace(context);

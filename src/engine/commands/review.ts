@@ -30,7 +30,7 @@ export const reviewCommand: CommandDefinition<ReviewData> = {
   options: [
     { flags: "--max-tokens <count>", description: "Response budget (default 8000)" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   async execute(context: CommandContext): Promise<CommandResult<ReviewData>> {
     const focusArg = context.args[0];

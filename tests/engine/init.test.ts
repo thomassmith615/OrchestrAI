@@ -62,7 +62,7 @@ describe("initCommand", () => {
     );
   });
 
-  it("declares that it requires a repository", () => {
-    expect(initCommand.requires).toEqual({ repository: true });
+  it("declares that it requires a repository, via the default scope", () => {
+    expect(initCommand.requires).toEqual({});
   });
 });

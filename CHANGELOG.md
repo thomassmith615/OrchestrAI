@@ -10,6 +10,22 @@ Capability. See `docs/ROADMAP-V2.md`.
 
 ### Added
 
+- Milestone V2-2: scope.
+  - `Scope` (`src/core/workspace.ts`): repository scope, unchanged from
+    Version 1, or user scope, rooted at `~/.orchestrai` with no repository
+    anywhere, resolved through the injected environment host rather than
+    `process.env` directly.
+  - `CommandRequirements.repository: boolean` replaced by
+    `CommandRequirements.scope: "repository" | "user" | "either"`, defaulting
+    to `"repository"` — the default that kept all 27 Version 1 commands'
+    behaviour unchanged.
+  - `CommandContext` gains a resolved `scope` field, alongside the unchanged
+    `workspace` field. A command declaring user scope now runs with no git
+    repository anywhere on the filesystem.
+  - `orch info` and `orch doctor` report the active scope. `doctor` still
+    never fails merely for being outside a repository.
+  - See ADR 0017.
+
 - Milestone V2-1: capabilities.
   - `src/runtime/`: the `Capability` contract (id, summary, declared command
     prefix, `commands()`), a `CapabilityRegistry`, and `activateCapabilities`,

@@ -172,6 +172,51 @@ describe("run", () => {
     expect(err.text()).toContain("Not inside a git repository");
   });
 
+  it("exits 4 for a command declaring nothing but relying on the default scope", async () => {
+    // No `requires` field at all means scope-agnostic (matches `info` and
+    // `doctor`); a `requires` object with no `scope` defaults to
+    // "repository" and must still fail outside one. See ADR 0017.
+    const registry = new CommandRegistry().register({
+      name: "needs-repo",
+      summary: "Declares requires without a scope",
+      requires: {},
+      execute: () => Promise.resolve(ok({}, { fields: [] })),
+    });
+    const { err, invoke } = harness(registry);
+
+    expect(await invoke("needs-repo")).toBe(EXIT_CODES.precondition);
+    expect(err.text()).toContain("Not inside a git repository");
+  });
+
+  it("succeeds for a command declaring user scope with no repository anywhere", async () => {
+    const registry = new CommandRegistry().register({
+      name: "needs-home",
+      summary: "Declares user scope",
+      requires: { scope: "user" },
+      execute: (context) =>
+        Promise.resolve(
+          ok(
+            { scope: context.scope, workspace: context.workspace },
+            { fields: [] },
+          ),
+        ),
+    });
+    const hosts = fakeHosts({ env: { HOME: "/Users/demo" } });
+    const { out, invoke } = harness(registry, hosts);
+
+    expect(await invoke("needs-home", "--json")).toBe(EXIT_CODES.success);
+    const data = JSON.parse(out.text()) as {
+      scope: { kind: string; root: string } | null;
+      workspace: unknown;
+    };
+    expect(data.workspace).toBeNull();
+    expect(data.scope).toEqual({
+      kind: "user",
+      root: "/Users/demo/.orchestrai",
+      stateDir: "/Users/demo/.orchestrai",
+    });
+  });
+
   it("exits 5 when the config file is unreadable", async () => {
     const hosts = fakeHosts({
       fs: fakeFileSystem({

@@ -152,7 +152,7 @@ export const buildCommand: CommandDefinition<GateCommandData> = {
   name: "build",
   summary: "Execute the configured build pipeline",
   options: [TIMEOUT_OPTION],
-  requires: { repository: true, config: true },
+  requires: { config: true },
   execute: (context) => execute(context, ["build"]),
 };
 
@@ -163,7 +163,7 @@ export const testCommand: CommandDefinition<GateCommandData> = {
     TIMEOUT_OPTION,
     { flags: "--all", description: "Include the build gate" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
   execute: (context) =>
     execute(
       context,

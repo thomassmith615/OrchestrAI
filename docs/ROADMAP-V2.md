@@ -13,7 +13,7 @@ implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** V2-1 complete.
+**Current position:** V2-2 complete.
 
 **The phase's Definition of Done** (not yet reached): the runtime hosts two
 capabilities; Engineering is one; a trivial placeholder is the other; the
@@ -38,7 +38,7 @@ anywhere; and at no point does the runtime branch on a capability's identity.
   to name Engineering — and assembles the default runtime the CLI now drives.
   Delivers `orch capabilities`. See ADR 0016.
 
-- [ ] **V2-2. Scope**
+- [x] **V2-2. Scope**
   Replaces the assumption that every command runs inside a git repository
   with an explicit `Scope`: repository scope (rooted at the git root, exactly
   as Version 1) or user scope (rooted at `~/.orchestrai`, with no repository
@@ -85,3 +85,4 @@ anywhere; and at no point does the runtime branch on a capability's identity.
 | --- | --- |
 | 2026-08-02 | Version 2 roadmap defined (6 milestones), continuing directly from the Version 1 1.0.0 release. |
 | 2026-08-02 | Milestone V2-1 complete: capability contract, registry, and activation in `src/runtime/`; Engineering declared as the first capability in `src/capabilities/engineering/`, with no implementation moved; `orch capabilities`. See ADR 0016. |
+| 2026-08-02 | Milestone V2-2 complete: `Scope` (repository or user) replaces the git-repository assumption in the command contract; `CommandRequirements.repository` replaced by `CommandRequirements.scope`, defaulting to repository; `orch info` and `orch doctor` report the active scope. See ADR 0017. |

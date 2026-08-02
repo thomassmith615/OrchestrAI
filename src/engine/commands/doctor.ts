@@ -30,6 +30,8 @@ export interface DoctorData {
   readonly failures: number;
   readonly warnings: number;
   readonly healthy: boolean;
+  /** The scope this invocation would run under. See ADR 0017. */
+  readonly scope: "repository" | "user" | null;
 }
 
 function meetsMinimumNode(version: string): boolean {
@@ -85,6 +87,19 @@ export const doctorCommand: CommandDefinition<DoctorData> = {
           : `${STATE_DIR_NAME} missing, run \`orch init\``,
     });
 
+    // Never a failure: this reports the scope, it does not require one. See
+    // ADR 0017.
+    checks.push({
+      name: "Scope",
+      status: context.scope === null ? "warn" : "pass",
+      detail:
+        context.scope === null
+          ? "no repository and no resolvable home directory (HOME not set)"
+          : context.scope.kind === "repository"
+            ? `repository, ${context.scope.workspace.root}`
+            : `user, ${context.scope.root}`,
+    });
+
     if (context.config === null) {
       checks.push({
         name: "Config",
@@ -138,7 +153,13 @@ export const doctorCommand: CommandDefinition<DoctorData> = {
           : ["All checks passed."];
 
     return Promise.resolve({
-      data: { checks, failures, warnings, healthy: failures === 0 },
+      data: {
+        checks,
+        failures,
+        warnings,
+        healthy: failures === 0,
+        scope: context.scope?.kind ?? null,
+      },
       report: {
         fields: checks.map((check) => ({
           label: check.name,

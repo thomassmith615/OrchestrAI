@@ -98,7 +98,7 @@ export const proposeCommand: CommandDefinition<ProposeData> = {
       description: "Response budget (default 8000)",
     },
   ],
-  requires: { repository: true, config: true, initialized: true },
+  requires: { config: true, initialized: true },
 
   async execute(context: CommandContext): Promise<CommandResult<ProposeData>> {
     const workspace = requireWorkspace(context);
@@ -184,7 +184,7 @@ export const proposeListCommand: CommandDefinition<{
 }> = {
   name: "propose list",
   summary: "List change proposals, newest first",
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(
     context: CommandContext,
@@ -218,7 +218,7 @@ export const proposeShowCommand: CommandDefinition<{
       required: false,
     },
   ],
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(
     context: CommandContext,
@@ -267,7 +267,7 @@ export const proposeApplyCommand: CommandDefinition<ApplyData> = {
     },
     { flags: "--no-verify", description: "Skip the gates after applying" },
   ],
-  requires: { repository: true, config: true, initialized: true },
+  requires: { config: true, initialized: true },
 
   execute(context: CommandContext): Promise<CommandResult<ApplyData>> {
     return attempt(() => {
@@ -363,7 +363,7 @@ export const proposeRejectCommand: CommandDefinition<{ proposal: Proposal }> = {
       required: false,
     },
   ],
-  requires: { repository: true, initialized: true },
+  requires: { initialized: true },
 
   execute(
     context: CommandContext,

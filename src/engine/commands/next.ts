@@ -38,7 +38,7 @@ export const nextCommand: CommandDefinition<NextData> = {
     { flags: "--dry-run", description: "List the stages without running them" },
     { flags: "--max-tokens <count>", description: "Response budget per call" },
   ],
-  requires: { repository: true, config: true, initialized: true },
+  requires: { config: true, initialized: true },
 
   async execute(context: CommandContext): Promise<CommandResult<NextData>> {
     const workspace = requireWorkspace(context);

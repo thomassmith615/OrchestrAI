@@ -71,7 +71,7 @@ export function createRegistry(): CommandRegistry {
 }
 
 export { CommandRegistry } from "./registry.js";
-export { ok, requireConfig, requireWorkspace } from "./command.js";
+export { ok, requireConfig, requireScope, requireWorkspace } from "./command.js";
 export type {
   CommandArgument,
   CommandContext,

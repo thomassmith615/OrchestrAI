@@ -112,7 +112,7 @@ describe("statusCommand", () => {
   });
 
   it("requires a repository and valid configuration", () => {
-    expect(statusCommand.requires).toEqual({ repository: true, config: true });
+    expect(statusCommand.requires).toEqual({ config: true });
   });
 
   it("reports git branch and head commit", async () => {

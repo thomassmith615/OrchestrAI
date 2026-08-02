@@ -29,7 +29,7 @@ export const dashboardCommand: CommandDefinition<DashboardData> = {
     { flags: "--host <host>", description: "Interface to bind (default 127.0.0.1)" },
     { flags: "--once", description: "Print the HTML and exit without serving" },
   ],
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   async execute(context: CommandContext): Promise<CommandResult<DashboardData>> {
     const workspace = requireWorkspace(context);

@@ -27,7 +27,7 @@ export const initCommand: CommandDefinition<InitData> = {
   options: [
     { flags: "--force", description: "Overwrite an existing configuration file" },
   ],
-  requires: { repository: true },
+  requires: {},
 
   execute(context: CommandContext): Promise<CommandResult<InitData>> {
     const workspace = requireWorkspace(context);

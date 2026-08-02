@@ -36,6 +36,6 @@ describe("configCommand", () => {
   });
 
   it("requires a repository and valid configuration", () => {
-    expect(configCommand.requires).toEqual({ repository: true, config: true });
+    expect(configCommand.requires).toEqual({ config: true });
   });
 });

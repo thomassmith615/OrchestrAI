@@ -99,6 +99,6 @@ describe("contextCommand", () => {
   });
 
   it("requires a repository and valid configuration", () => {
-    expect(contextCommand.requires).toEqual({ repository: true, config: true });
+    expect(contextCommand.requires).toEqual({ config: true });
   });
 });

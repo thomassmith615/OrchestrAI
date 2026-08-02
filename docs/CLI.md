@@ -63,6 +63,16 @@ the original surface. The first two make otherwise invisible behaviour
 inspectable; the third gives the proposal lifecycle a surface, which
 `orch milestone` needs in order to drive it.
 
+### Version 2 additions
+
+| Command | Description | Milestone |
+| --- | --- | --- |
+| `orch capabilities` | List the capabilities the runtime activated | V2-1, available |
+
+`orch capabilities` is a runtime command, not one Engineering declares: it
+reports on activation, which is the runtime's job, not any capability's. See
+ADR 0016.
+
 ## Global flags
 
 Accepted by every command, before or after the command name.
@@ -326,12 +336,17 @@ runs. A command that needs a repository never has to check for one.
 
 | Requirement | Failure | Exit |
 | --- | --- | --- |
-| `repository` | Not inside a git repository | 4 |
+| `scope: "repository"` (the default) | Not inside a git repository | 4 |
+| `scope: "user"` | The user's home directory could not be determined | 4 |
+| `scope: "either"` | Never fails; resolves to whichever is available | — |
 | `initialized` | `orch init` has not been run | 4 |
 | `config` | Configuration is missing or invalid | 5 |
 
 `orch doctor` deliberately declares none of these, so that it can diagnose a
-broken setup instead of failing with it.
+broken setup instead of failing with it. Every command in the Version 1
+surface below runs under repository scope, its default; `scope` exists so a
+future capability's commands can declare `"user"` instead and run with no
+repository anywhere. See ADR 0017.
 
 ## Exit codes
 

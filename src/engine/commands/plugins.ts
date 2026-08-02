@@ -36,7 +36,7 @@ function describe(entry: LoadedPlugin): PluginsData["loaded"][number] {
 export const pluginsCommand: CommandDefinition<PluginsData> = {
   name: "plugins",
   summary: "List configured plugins and the permissions they request",
-  requires: { repository: true, config: true },
+  requires: { config: true },
 
   async execute(context: CommandContext): Promise<CommandResult<PluginsData>> {
     const workspace = requireWorkspace(context);

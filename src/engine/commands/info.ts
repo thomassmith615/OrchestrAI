@@ -13,6 +13,9 @@ export interface InfoData extends EnvironmentSnapshot {
   /** Repository root, or null when not inside a git repository. */
   readonly repository: string | null;
   readonly initialized: boolean;
+  /** The scope this invocation would run under: "repository", "user", or
+   *  null when neither a repository nor a resolvable home directory exists. */
+  readonly scope: "repository" | "user" | null;
 }
 
 export const infoCommand: CommandDefinition<InfoData> = {
@@ -25,6 +28,7 @@ export const infoCommand: CommandDefinition<InfoData> = {
       ...snapshot,
       repository: context.workspace?.root ?? null,
       initialized: context.workspace?.initialized ?? false,
+      scope: context.scope?.kind ?? null,
     };
 
     return Promise.resolve(
@@ -35,6 +39,7 @@ export const infoCommand: CommandDefinition<InfoData> = {
           { label: "Platform", value: `${data.platform}/${data.arch}` },
           { label: "Directory", value: data.workingDirectory },
           { label: "Repository", value: data.repository },
+          { label: "Scope", value: data.scope },
         ],
       }),
     );

@@ -91,4 +91,26 @@ describe("doctorCommand", () => {
   it("declares no requirements so it can diagnose a broken setup", () => {
     expect(doctorCommand.requires).toBeUndefined();
   });
+
+  it("reports the active scope without treating it as a failure", async () => {
+    const result = await doctorCommand.execute(
+      fakeContext({
+        workspace,
+        config: healthyConfig(),
+        hosts: fakeHosts({ env: { ANTHROPIC_API_KEY: "sk-test" } }),
+        scope: { kind: "repository", workspace },
+      }),
+    );
+
+    expect(result.data.scope).toBe("repository");
+    expect(statusOf(result.data.checks, "Scope")).toBe("pass");
+    expect(result.data.failures).toBe(0);
+  });
+
+  it("warns rather than fails when no scope resolves at all", async () => {
+    const result = await doctorCommand.execute(fakeContext({ scope: null }));
+
+    expect(result.data.scope).toBeNull();
+    expect(statusOf(result.data.checks, "Scope")).toBe("warn");
+  });
 });

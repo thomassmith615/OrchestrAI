@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildBaseContext, enforceRequirements } from "../../src/cli/context.js";
+import {
+  buildBaseContext,
+  enforceRequirements,
+  resolveContextScope,
+} from "../../src/cli/context.js";
 import { EXIT_CODES } from "../../src/core/errors.js";
 import { fakeFileSystem, fakeHosts } from "../support/fakes.js";
 import type { Hosts } from "../../src/core/hosts.js";
@@ -68,7 +72,7 @@ describe("enforceRequirements", () => {
 
   it("requires a repository with the precondition exit code", () => {
     try {
-      enforceRequirements({ repository: true }, outside);
+      enforceRequirements({ scope: "repository" }, outside);
       expect.unreachable("should have thrown");
     } catch (error) {
       expect((error as { exitCode: number }).exitCode).toBe(
@@ -98,5 +102,88 @@ describe("enforceRequirements", () => {
         EXIT_CODES.configuration,
       );
     }
+  });
+
+  it("defaults to repository scope when requires is declared without one", () => {
+    // A command that declares `requires: {}` (no `scope`) behaves exactly
+    // like one that declared `scope: "repository"` explicitly. This is the
+    // default that kept every Version 1 command's behaviour unchanged when
+    // `scope` replaced the old `repository: boolean` flag. See ADR 0017.
+    try {
+      enforceRequirements({}, outside);
+      expect.unreachable("should have thrown");
+    } catch (error) {
+      expect((error as { exitCode: number }).exitCode).toBe(
+        EXIT_CODES.precondition,
+      );
+    }
+  });
+
+  it("succeeds for a command declaring user scope outside a repository", () => {
+    const outsideWithHome = buildBaseContext(
+      "/tmp",
+      hostsWith({}, { HOME: "/Users/demo" }),
+      [],
+    );
+
+    expect(() =>
+      enforceRequirements({ scope: "user" }, outsideWithHome),
+    ).not.toThrow();
+  });
+
+  it("fails a command requiring user scope when no home directory resolves", () => {
+    try {
+      enforceRequirements({ scope: "user" }, outside);
+      expect.unreachable("should have thrown");
+    } catch (error) {
+      expect((error as { exitCode: number }).exitCode).toBe(
+        EXIT_CODES.precondition,
+      );
+    }
+  });
+
+  it("never fails scope for a command declaring either", () => {
+    expect(() => enforceRequirements({ scope: "either" }, outside)).not.toThrow();
+  });
+});
+
+describe("resolveContextScope", () => {
+  it("resolves repository scope inside a repository when nothing was declared", () => {
+    const inside = buildBaseContext("/repo", hostsWith({ "/repo/.git/HEAD": "" }), []);
+
+    expect(resolveContextScope(undefined, inside)).toEqual({
+      kind: "repository",
+      workspace: inside.workspace,
+    });
+  });
+
+  it("resolves user scope outside a repository for a command declaring user", () => {
+    const outsideWithHome = buildBaseContext(
+      "/tmp",
+      hostsWith({}, { HOME: "/Users/demo" }),
+      [],
+    );
+
+    expect(resolveContextScope({ scope: "user" }, outsideWithHome)).toEqual({
+      kind: "user",
+      root: "/Users/demo/.orchestrai",
+      stateDir: "/Users/demo/.orchestrai",
+    });
+  });
+
+  it("falls back to user scope outside a repository when nothing was declared", () => {
+    const outsideWithHome = buildBaseContext(
+      "/tmp",
+      hostsWith({}, { HOME: "/Users/demo" }),
+      [],
+    );
+
+    expect(resolveContextScope(undefined, outsideWithHome)?.kind).toBe("user");
+  });
+
+  it("resolves null when neither a repository nor a home directory exists", () => {
+    const outside = buildBaseContext("/tmp", hostsWith({}), []);
+
+    expect(resolveContextScope(undefined, outside)).toBeNull();
   });
 });

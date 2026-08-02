@@ -9,6 +9,7 @@ export {
   CommandRegistry,
   ok,
   requireConfig,
+  requireScope,
   requireWorkspace,
 } from "./engine/index.js";
 export {
@@ -47,6 +48,9 @@ export {
 export {
   CONFIG_FILE_NAME,
   STATE_DIR_NAME,
+  resolveHomeDir,
+  resolveScope,
+  resolveUserScope,
   resolveWorkspace,
 } from "./core/workspace.js";
 export {
@@ -101,7 +105,13 @@ export type {
   ProcessHost,
   ProcessResult,
 } from "./core/hosts.js";
-export type { Workspace } from "./core/workspace.js";
+export type {
+  RepositoryScope,
+  Scope,
+  ScopeKind,
+  UserScope,
+  Workspace,
+} from "./core/workspace.js";
 export type { Logger, LoggerOptions, LogLevel, LogSink } from "./core/logger.js";
 export type {
   EnvironmentHost,

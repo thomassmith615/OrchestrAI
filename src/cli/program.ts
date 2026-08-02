@@ -7,7 +7,7 @@
  */
 import { Command } from "commander";
 import { GLOBAL_OPTIONS } from "./globals.js";
-import { enforceRequirements } from "./context.js";
+import { enforceRequirements, resolveContextScope } from "./context.js";
 import { render } from "./render.js";
 import { EXIT_CODES } from "../core/errors.js";
 import { packageDescription, packageVersion } from "../core/manifest.js";
@@ -96,6 +96,7 @@ function buildCommand(
       args: positional,
       hosts: options.base.hosts,
       workspace: options.base.workspace,
+      scope: resolveContextScope(definition.requires, options.base),
       config: options.base.config,
       configError: options.base.configError,
     });

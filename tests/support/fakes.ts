@@ -260,6 +260,9 @@ export function fakeContext(
     args: [],
     hosts: fakeHosts(),
     workspace: null,
+    // Matches what `resolveContextScope` would produce for this same
+    // workspace/hosts pair: no repository and no HOME set resolves to null.
+    scope: null,
     config: null,
     configError: undefined,
     ...overrides,
