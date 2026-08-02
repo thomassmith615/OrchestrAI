@@ -4,7 +4,16 @@
  */
 import { dirname } from "node:path";
 import { createLogger } from "../../src/core/logger.js";
-import type { EnvHost, FileSystemHost, Hosts, ProcessHost, ProcessResult } from "../../src/core/hosts.js";
+import type {
+  EnvHost,
+  FileSystemHost,
+  Hosts,
+  HttpHost,
+  HttpRequest,
+  HttpResponse,
+  ProcessHost,
+  ProcessResult,
+} from "../../src/core/hosts.js";
 import type { CommandContext } from "../../src/engine/command.js";
 import type { LogSink } from "../../src/core/logger.js";
 
@@ -54,17 +63,64 @@ export function fakeProcess(result: Partial<ProcessResult> = {}): ProcessHost {
   };
 }
 
+export interface FakeHttp extends HttpHost {
+  readonly requests: HttpRequest[];
+}
+
+/**
+ * Serves canned responses. `body` is returned verbatim for non-streaming
+ * calls; `lines` is returned for server sent events.
+ */
+export function fakeHttp(
+  response: {
+    status?: number;
+    body?: string;
+    lines?: readonly string[];
+    throws?: boolean;
+  } = {},
+): FakeHttp {
+  const requests: HttpRequest[] = [];
+  const status = response.status ?? 200;
+
+  return {
+    requests,
+    send(request: HttpRequest): Promise<HttpResponse> {
+      requests.push(request);
+
+      if (response.throws === true) {
+        return Promise.reject(new Error("network down"));
+      }
+
+      const lines = response.lines ?? [];
+
+      return Promise.resolve({
+        status,
+        ok: status >= 200 && status < 300,
+        text: () => Promise.resolve(response.body ?? ""),
+        // eslint-disable-next-line @typescript-eslint/require-await
+        lines: async function* (): AsyncGenerator<string, void, undefined> {
+          for (const line of lines) {
+            yield line;
+          }
+        },
+      });
+    },
+  };
+}
+
 export function fakeHosts(
   overrides: {
     fs?: FileSystemHost;
     proc?: ProcessHost;
     env?: EnvHost;
+    http?: HttpHost;
   } = {},
 ): Hosts {
   return {
     fs: overrides.fs ?? fakeFileSystem(),
     proc: overrides.proc ?? fakeProcess(),
     env: overrides.env ?? {},
+    http: overrides.http ?? fakeHttp(),
   };
 }
 

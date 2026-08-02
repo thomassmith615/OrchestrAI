@@ -44,7 +44,7 @@ what happened, and hands the decision to a human.
                                     |
                     +---------------v---------------+
    providers        |  Provider interface, registry |   (M3, M11)
-                    |  anthropic | openai | mock    |
+                    |  anthropic | mock | openai... |
                     +---------------+---------------+
                                     |
                     +---------------v---------------+
@@ -63,7 +63,7 @@ Providers know nothing about workflows. Surfaces are thin.
 | `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace. No AI awareness. | M1, M2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
-| `src/providers` | One folder per provider behind a single interface. | M3 |
+| `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
 | `src/prompts` | Versioned, testable prompt templates. Never inline strings. | M6 |
 | `src/repo` | Repository scanning, git access, toolchain detection. | M4 |
 | `src/context` | Selection and budgeting of what a model is allowed to see. | M6 |

@@ -29,10 +29,30 @@ export interface ProcessHost {
 
 export type EnvHost = Readonly<Record<string, string | undefined>>;
 
+export interface HttpRequest {
+  readonly url: string;
+  readonly method: string;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body: string;
+}
+
+export interface HttpResponse {
+  readonly status: number;
+  readonly ok: boolean;
+  text(): Promise<string>;
+  /** Response body as newline delimited chunks, for server sent events. */
+  lines(): AsyncIterable<string>;
+}
+
+export interface HttpHost {
+  send(request: HttpRequest): Promise<HttpResponse>;
+}
+
 export interface Hosts {
   readonly fs: FileSystemHost;
   readonly proc: ProcessHost;
   readonly env: EnvHost;
+  readonly http: HttpHost;
 }
 
 export const nodeFileSystem: FileSystemHost = {
@@ -62,6 +82,54 @@ export const nodeProcessHost: ProcessHost = {
   },
 };
 
+async function* decodeLines(
+  response: Response,
+): AsyncGenerator<string, void, undefined> {
+  if (response.body === null) {
+    return;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+    buffer += decoder.decode(chunk, { stream: true });
+
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      yield buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+    }
+  }
+
+  if (buffer.length > 0) {
+    yield buffer;
+  }
+}
+
+export const nodeHttpHost: HttpHost = {
+  async send(request: HttpRequest): Promise<HttpResponse> {
+    const response = await fetch(request.url, {
+      method: request.method,
+      headers: { ...request.headers },
+      body: request.body,
+    });
+
+    return {
+      status: response.status,
+      ok: response.ok,
+      text: () => response.text(),
+      lines: () => decodeLines(response),
+    };
+  },
+};
+
 export function nodeHosts(): Hosts {
-  return { fs: nodeFileSystem, proc: nodeProcessHost, env: process.env };
+  return {
+    fs: nodeFileSystem,
+    proc: nodeProcessHost,
+    env: process.env,
+    http: nodeHttpHost,
+  };
 }

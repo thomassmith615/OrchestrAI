@@ -44,6 +44,8 @@ describe("createRegistry", () => {
       "doctor",
       "info",
       "init",
+      "provider add",
+      "providers",
     ]);
   });
 });

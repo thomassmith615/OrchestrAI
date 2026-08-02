@@ -4,6 +4,8 @@ export {
   resolveConfig,
   serializeConfig,
 } from "./resolve.js";
+export { patchConfigFile } from "./write.js";
+export type { ConfigPatch } from "./write.js";
 export {
   CONFIG_FIELDS,
   CONFIG_KEYS,

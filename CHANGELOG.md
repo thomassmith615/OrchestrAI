@@ -7,6 +7,20 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ### Added
 
+- Milestone 3: provider layer and the Anthropic provider.
+  - `Provider` interface with normalized `CompletionRequest`,
+    `CompletionResult`, streaming chunks, capability flags, and a
+    `ProviderError` taxonomy. No vendor type crosses the boundary.
+  - Provider registry with metadata available without construction.
+  - Deterministic offline `mock` provider, a first class registry member.
+  - Anthropic provider over REST with streaming, usage accounting, and status
+    to error kind mapping. See ADR 0006.
+  - Injectable HTTP host with server sent event decoding.
+  - Config file patching that preserves unrecognized settings.
+  - Nested command names, so the engine can declare `provider add` without
+    knowing anything about the CLI framework.
+  - `orch providers` (with opt-in `--verify`), `orch provider add <name>`.
+
 - Milestone 2: configuration, workspace, and diagnostics.
   - Workspace resolution by walking upward to the git root, with the state
     directory and config path derived from it.

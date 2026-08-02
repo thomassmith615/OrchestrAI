@@ -14,7 +14,7 @@ human supervised process.
 
 ## Status
 
-Version 1 is under construction. Milestone 2 of 12 is complete.
+Version 1 is under construction. Milestone 3 of 12 is complete.
 
 ## Requirements
 
@@ -36,12 +36,14 @@ orch info
 | `orch init` | Initialize Orchestraᵢ inside an existing repository |
 | `orch doctor` | Diagnose node, git, repository, config, and credentials |
 | `orch config` | Show resolved settings and the layer each came from |
+| `orch providers` | List AI providers, `--verify` for a live check |
+| `orch provider add <name>` | Select and configure a provider |
 | `orch info` | Report the running environment |
 | `orch --version` | Print the version |
 | `orch --help` | List available commands |
 
 The full planned surface (`status`, `next`, `milestone`, `review`, `test`,
-`build`, `providers`, `memory`, `history`, `plugins`, `dashboard`, `update`) is
+`build`, `memory`, `history`, `plugins`, `dashboard`, `update`) is
 specified in [docs/CLI.md](docs/CLI.md) with the milestone that delivers each
 one. Planned commands are not stubbed: help output lists only what works.
 
@@ -61,6 +63,14 @@ Settings resolve through defaults, then `orchestrai.config.json`, then
 `ORCH_*` environment variables, then `--set`. Credentials are read from the
 environment and never written to the config file.
 
+```bash
+export ANTHROPIC_API_KEY=...
+orch provider add anthropic
+orch providers --verify        # opt in, makes one small live request
+```
+
+The `mock` provider is deterministic and offline: `orch provider add mock`.
+
 ## Scripts
 
 | Script | Purpose |
@@ -75,6 +85,7 @@ environment and never written to the config file.
 
 ```
 src/core/     errors and exit codes, logging, injectable hosts, config, workspace
+src/providers/  one file per provider behind a single interface, plus registry
 src/engine/   command contract and registry, the interface every surface uses
 src/cli/      commander adaptation, rendering, context building. No logic.
 tests/        vitest suite, mirrors src structure

@@ -1,0 +1,7 @@
+{
+  "provider": "anthropic",
+  "model": null,
+  "roadmapPath": "docs/ROADMAP.md",
+  "logLevel": "info",
+  "ignore": []
+}

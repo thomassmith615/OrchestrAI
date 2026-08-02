@@ -33,11 +33,39 @@ function applyGlobalOptions(command: Command): void {
   }
 }
 
+/**
+ * Finds or creates the parent group for a nested command name such as
+ * `provider add`, so that the engine can declare nesting without knowing
+ * anything about commander.
+ */
+function resolveParent(program: Command, segments: readonly string[]): Command {
+  let parent = program;
+
+  for (const segment of segments) {
+    const existing = parent.commands.find(
+      (candidate) => candidate.name() === segment,
+    );
+
+    if (existing !== undefined) {
+      parent = existing;
+      continue;
+    }
+
+    const group = new Command(segment).description(`${segment} commands`);
+    applyGlobalOptions(group);
+    parent.addCommand(group);
+    parent = group;
+  }
+
+  return parent;
+}
+
 function buildCommand(
   definition: CommandDefinition,
   options: ProgramOptions,
 ): Command {
-  const command = new Command(definition.name).description(definition.summary);
+  const leaf = definition.name.split(" ").at(-1) ?? definition.name;
+  const command = new Command(leaf).description(definition.summary);
 
   for (const argument of definition.args ?? []) {
     const token =
@@ -99,7 +127,9 @@ export function createProgram(options: ProgramOptions): Command {
   applyGlobalOptions(program);
 
   for (const definition of options.registry.list()) {
-    program.addCommand(buildCommand(definition, options));
+    const segments = definition.name.split(" ");
+    const parent = resolveParent(program, segments.slice(0, -1));
+    parent.addCommand(buildCommand(definition, options));
   }
 
   return program;

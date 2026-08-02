@@ -10,7 +10,7 @@ milestone, and implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** Milestone 2 complete. Next up: Milestone 3.
+**Current position:** Milestone 3 complete. Next up: Milestone 4.
 
 ---
 
@@ -32,7 +32,7 @@ milestone, and implement the next unchecked one.
   checks node, git, config, and credentials.
   Delivers `orch init`, `orch doctor`, `orch config`.
 
-- [ ] **M3. Provider layer and the Anthropic provider**
+- [x] **M3. Provider layer and the Anthropic provider**
   The central abstraction: `Provider`, `CompletionRequest`, `CompletionResult`,
   capability flags, and a registry. A deterministic mock provider that every
   later test depends on. A working Anthropic implementation with streaming,
@@ -136,3 +136,4 @@ at a small change rather than a large one.
 | 2026-08-01 | Consolidated to 12 milestones. Verification gates moved ahead of context packing; project memory moved after the end to end loop. Scope unchanged. |
 | 2026-08-02 | CLI adopted as the primary interface. Binary renamed to `orch`. Milestone 1 reimplemented around a neutral command contract. Command surface mapped to milestones in `docs/CLI.md`. |
 | 2026-08-02 | Milestone 2 complete: configuration layering with source tracking, workspace resolution, declared command preconditions, `orch init`, `orch doctor`, `orch config`. |
+| 2026-08-02 | Milestone 3 complete: provider interface and registry, deterministic mock provider, Anthropic provider with streaming and usage accounting, `orch providers`, `orch provider add`. |

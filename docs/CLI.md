@@ -35,8 +35,8 @@ Commands not marked as available do not exist yet and are not stubbed.
 | `orch init` | Initialize Orchestraᵢ inside an existing repository | M2, available |
 | `orch doctor` | Run diagnostic checks on the repository configuration | M2, available |
 | `orch config` | Inspect resolved configuration and its sources | M2, available |
-| `orch providers` | Display installed AI providers | M3 |
-| `orch provider add <name>` | Install or configure an AI provider | M3 |
+| `orch providers` | Display available AI providers, `--verify` for a live check | M3, available |
+| `orch provider add <name>` | Select and configure an AI provider | M3, available |
 | `orch status` | Repository health, milestone progress, providers, pending work | M5 |
 | `orch build` | Execute the configured build pipeline | M5 |
 | `orch test` | Execute all configured validation | M5 |
@@ -82,6 +82,24 @@ specific environment variables, and `orch doctor` reports presence only.
 
 State lives in `.orchestrai/` at the repository root. It is meant to be
 committed, apart from `.orchestrai/cache/`.
+
+## Providers
+
+Provider selection lives in configuration, not in code:
+
+```bash
+orch providers                  # what is available and whether it is usable
+orch provider add anthropic     # select it
+orch provider add anthropic --model claude-opus-5
+orch providers --verify         # minimal live request, opt in
+export ANTHROPIC_API_KEY=...    # credentials come from the environment only
+```
+
+The `mock` provider is deterministic and offline. Use it to exercise
+orchestration without spending anything: `orch provider add mock`.
+
+`--verify` propagates the provider's exit code, so a bad key exits 5 and a
+transport failure exits 1.
 
 ## Preconditions
 
