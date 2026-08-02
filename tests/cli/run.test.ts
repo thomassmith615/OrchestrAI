@@ -1,0 +1,149 @@
+import { describe, expect, it } from "vitest";
+import { run } from "../../src/cli/run.js";
+import { createLogger } from "../../src/core/logger.js";
+import { EXIT_CODES } from "../../src/core/errors.js";
+import { CommandRegistry } from "../../src/engine/registry.js";
+import { ok } from "../../src/engine/command.js";
+import type { LogSink } from "../../src/core/logger.js";
+
+interface RecordingSink extends LogSink {
+  readonly lines: string[];
+  text(): string;
+}
+
+function recordingSink(): RecordingSink {
+  const lines: string[] = [];
+  return {
+    lines,
+    write(line: string): void {
+      lines.push(line);
+    },
+    text(): string {
+      return lines.join("\n");
+    },
+  };
+}
+
+function harness(registry?: CommandRegistry): {
+  out: RecordingSink;
+  err: RecordingSink;
+  invoke: (...argv: string[]) => Promise<number>;
+} {
+  const out = recordingSink();
+  const err = recordingSink();
+  const logger = createLogger({ level: "debug", out, err });
+
+  return {
+    out,
+    err,
+    invoke: (...argv: string[]) =>
+      run({
+        argv,
+        logger,
+        cwd: "/workspace/demo",
+        ...(registry === undefined ? {} : { registry }),
+      }),
+  };
+}
+
+describe("run", () => {
+  it("prints the version and exits successfully", async () => {
+    const { out, invoke } = harness();
+
+    expect(await invoke("--version")).toBe(EXIT_CODES.success);
+    expect(out.text()).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it("names the binary orch in help output", async () => {
+    const { out, invoke } = harness();
+
+    expect(await invoke("--help")).toBe(EXIT_CODES.success);
+    expect(out.text()).toContain("orch");
+    expect(out.text()).toContain("info");
+    expect(out.text()).toContain("--json");
+  });
+
+  it("renders aligned human output by default", async () => {
+    const { out, invoke } = harness();
+
+    expect(await invoke("info")).toBe(EXIT_CODES.success);
+    expect(out.text()).toContain("Directory:  /workspace/demo");
+  });
+
+  it("emits JSON when --json is supplied after the command", async () => {
+    const { out, invoke } = harness();
+
+    expect(await invoke("info", "--json")).toBe(EXIT_CODES.success);
+    expect(JSON.parse(out.text())).toMatchObject({
+      name: "orchestrai",
+      workingDirectory: "/workspace/demo",
+    });
+  });
+
+  it("honours --cwd", async () => {
+    const { out, invoke } = harness();
+
+    await invoke("info", "--json", "--cwd", "/tmp/other");
+
+    expect(JSON.parse(out.text())).toMatchObject({
+      workingDirectory: "/tmp/other",
+    });
+  });
+
+  it("returns the usage exit code for an unknown command", async () => {
+    const { err, invoke } = harness();
+
+    expect(await invoke("teleport")).toBe(EXIT_CODES.usage);
+    expect(err.text()).toContain("teleport");
+  });
+
+  it("propagates a command exit code", async () => {
+    const registry = new CommandRegistry().register({
+      name: "gate",
+      summary: "Fails a validation gate",
+      execute: () =>
+        Promise.resolve({
+          ...ok({ passed: false }, { fields: [{ label: "Tests", value: false, status: "fail" as const }] }),
+          exitCode: EXIT_CODES.validation,
+        }),
+    });
+    const { out, invoke } = harness(registry);
+
+    expect(await invoke("gate")).toBe(EXIT_CODES.validation);
+    expect(out.text()).toContain("Tests:  FAIL");
+  });
+
+  it("reports failures as JSON when --json is active", async () => {
+    const registry = new CommandRegistry().register({
+      name: "boom",
+      summary: "Always throws",
+      execute: () => Promise.reject(new Error("exploded")),
+    });
+    const { err, invoke } = harness(registry);
+
+    expect(await invoke("boom", "--json")).toBe(EXIT_CODES.failure);
+    expect(JSON.parse(err.text())).toMatchObject({
+      error: { code: "internal.unexpected", message: "exploded" },
+    });
+  });
+
+  it("passes positional arguments and options to the command", async () => {
+    let received: { args: readonly string[]; force: unknown } | undefined;
+    const registry = new CommandRegistry().register({
+      name: "provider",
+      summary: "Test argument passing",
+      args: [{ name: "name", description: "Provider name" }],
+      options: [{ flags: "--force", description: "Overwrite" }],
+      execute: (context) => {
+        received = { args: context.args, force: context.options["force"] };
+        return Promise.resolve(ok({}, { fields: [] }));
+      },
+    });
+    const { invoke } = harness(registry);
+
+    expect(await invoke("provider", "anthropic", "--force")).toBe(
+      EXIT_CODES.success,
+    );
+    expect(received).toEqual({ args: ["anthropic"], force: true });
+  });
+});
