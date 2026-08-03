@@ -5,10 +5,34 @@ Format follows Keep a Changelog. Versioning is semantic.
 
 ## [Unreleased]
 
-Version 2 in progress: generalizing the runtime to host more than one
-Capability. See `docs/ROADMAP-V2.md`.
+Version 2's six milestones are complete: the runtime hosts capabilities,
+proven with a real second one, without shipping it. See `docs/ROADMAP-V2.md`.
 
 ### Added
+
+- Milestone V2-6: the second capability, and the proof.
+  - `src/capabilities/placeholder/`: a real, production-quality second
+    capability whose only purpose is proving the runtime — a real command
+    prefix, its own config namespace and field, its own storage namespace,
+    and `requires: { scope: "user" }` on every command it declares. No
+    domain; never shipped.
+  - `tests/capabilities/placeholder.test.ts`: assembles Engineering and
+    Placeholder into one registry and drives both through the real `run()`
+    CLI entry point, against a fake filesystem with no `.git` anywhere at
+    all — not a composition-level test, an end-to-end one. Proves `orch
+    capabilities` reports both with neither privileged; Placeholder's
+    commands succeed under user scope with no repository; state persists,
+    isolated per capability; and Engineering's own `orch status` still
+    requires a repository and still exits 4, unaffected by Placeholder's
+    presence in the same registry.
+  - Placeholder is deliberately not part of `defaultCapabilities`; the
+    shipped `orch` binary is unchanged, still Engineering alone.
+  - Route and page registries, named in this milestone's original roadmap
+    description, were not built: no HTTP surface or generalized dashboard
+    consumer exists to give their shape any discipline.
+  - Version 2's phase Definition of Done is proven, not shipped; promoting
+    Placeholder (or a real capability) into the default set is a product
+    decision left open. See ADR 0021.
 
 - Milestone V2-5: events, jobs, and provider registration.
   - `EventBus` (`src/runtime/events.ts`): a shared, synchronous, in-process

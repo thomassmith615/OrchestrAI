@@ -70,7 +70,7 @@ allowed to name one. See ADR 0016.
 | `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace and scope. No AI awareness. | M1, M2, V2-2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
 | `src/runtime` | Capability contract, `CapabilityRegistry`, activation, config/storage/provider composition, the event bus, the job contract. Lifecycle only: register, activate, assemble, report. Never names a capability. | V2-1, V2-3, V2-4, V2-5 |
-| `src/capabilities` | First-party capabilities and the composition root that names them (`assembleRuntime`). Engineering is the first; its implementation still lives where M1-M12 put it. | V2-1 |
+| `src/capabilities` | First-party capabilities and the composition root that names them (`assembleRuntime`). Engineering is the first; its implementation still lives where M1-M12 put it. Placeholder is a second, real, proof-only capability, not part of `defaultCapabilities`. | V2-1, V2-6 |
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
 | `src/prompts` | Versioned `.md` templates, typed interpolation, registry. | M6 |
@@ -214,6 +214,32 @@ events will eventually want one clean injection mechanism, but building it
 before three or four of these narrow, per-purpose context types have
 actually accumulated would be designing for a shape not yet known. See ADR
 0020.
+
+## The second capability, and what "proven" means (V2-6)
+
+`src/capabilities/placeholder/` is a real, second `Capability` module,
+written to the same standard as Engineering's: a real command prefix
+(`placeholder`), its own config namespace and field, its own storage
+namespace, and `requires: { scope: "user" }` on every command it declares —
+exercising, deliberately, every axis a capability can currently claim as its
+own. It has no domain and must never grow one.
+
+**It is not part of `defaultCapabilities`.** The `orch` binary, built and
+run, still activates Engineering alone. The architectural claim — that the
+runtime hosts more than one capability without branching on identity — is
+proven instead by `tests/capabilities/placeholder.test.ts`, which assembles
+Engineering and Placeholder into one registry and drives both through the
+real `run()` CLI entry point: `placeholder ping`/`placeholder status`
+succeed under user scope with no `.git` anywhere in the fake filesystem;
+state persists, isolated per capability; `orch status` (Engineering's,
+unprefixed) still requires a repository and still exits 4, unaffected by
+Placeholder's presence in the same registry; `orch capabilities` reports
+both with neither privileged.
+
+Whether to promote Placeholder, or a real second capability, into
+`defaultCapabilities` — making this true of the shipped product rather than
+of the test suite — is a product decision, left open rather than made here.
+See ADR 0021.
 
 ## Data flow for a milestone run (target state, M9)
 

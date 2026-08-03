@@ -13,13 +13,21 @@ implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** V2-5 complete.
+**Current position:** V2-6 complete. All six milestones delivered.
 
-**The phase's Definition of Done** (not yet reached): the runtime hosts two
-capabilities; Engineering is one; a trivial placeholder is the other; the
-placeholder executes entirely under user scope with no git repository
-anywhere; and at no point does the runtime branch on a capability's identity.
-**Home implementation does not begin until that proof exists.**
+**The phase's Definition of Done, and where it actually stands:** the
+runtime hosts two capabilities; Engineering is one; a trivial placeholder
+(`src/capabilities/placeholder/`) is the other; the placeholder executes
+entirely under user scope with no git repository anywhere; and at no point
+does the runtime branch on a capability's identity. **This is proven, not
+shipped.** `tests/capabilities/placeholder.test.ts` drives both capabilities
+through the real `run()` CLI entry point end to end — not a simulation of
+it — against a fake filesystem with no `.git` anywhere at all. The `orch`
+binary as built and run today still activates Engineering alone;
+Placeholder is deliberately not part of `defaultCapabilities`. Whether to
+promote it, or a real capability, into the shipped default set is a product
+decision left open for the project owner. See ADR 0021.
+**Home implementation does not begin until that decision is made.**
 
 ---
 
@@ -97,12 +105,24 @@ anywhere; and at no point does the runtime branch on a capability's identity.
   three mechanisms are proven correct without a live consumer, each with its
   own named revisit trigger. See ADR 0020.
 
-- [ ] **V2-6. Routes, pages, and the proof**
-  Route and page registries, generalizing the read-only dashboard from
-  hardcoded Engineering concepts into a page a capability registers. Then a
-  placeholder capability that runs entirely under user scope, with no git
-  repository anywhere, proving the phase's Definition of Done. Home
-  implementation begins only after this lands.
+- [x] **V2-6. The second capability, and the proof**
+  `src/capabilities/placeholder/` is a real, production-quality second
+  capability — not a test fixture — whose only purpose is proving the
+  runtime: a real command prefix, its own config namespace and field, its
+  own storage namespace, and `requires: { scope: "user" }` on every command
+  it declares. `tests/capabilities/placeholder.test.ts` assembles it
+  alongside Engineering and drives both through the actual `run()` CLI
+  entry point against a filesystem with no `.git` anywhere, proving:
+  `orch capabilities` reports both with neither privileged; `placeholder
+  ping`/`placeholder status` succeed under user scope with no repository;
+  state persists, isolated per capability; and Engineering's own `orch
+  status` still requires a repository and still exits 4, completely
+  unaffected by Placeholder's presence in the same registry. Placeholder is
+  deliberately not part of `defaultCapabilities` — the real `orch` binary is
+  unchanged. Route and page registries, named in this milestone's original
+  description, were not built: there is no HTTP surface or generalized
+  dashboard consumer to give their shape any discipline, so building them
+  would have been a guess wearing a contract's clothing. See ADR 0021.
 
 ---
 
@@ -116,3 +136,4 @@ anywhere; and at no point does the runtime branch on a capability's identity.
 | 2026-08-02 | Milestone V2-3 complete: `Capability.configSchema?()` and `composeConfigSchemas` let capabilities declare and merge namespaced config fields; Engineering's table composes byte for byte with `CONFIG_FIELDS`/`DEFAULT_CONFIG`. `resolveConfig`/`orch config` deliberately left unwired pending a second capability with a real field. See ADR 0018. |
 | 2026-08-02 | Milestone V2-4 complete: `Capability.storageNamespace?` and `createCapabilityStorage` give a capability a `FileSystemHost` confined to its own directory, with containment enforced on every path, not just implied by naming. Engineering's declared namespace resolves to `.orchestrai/` itself, proven by test, with no file I/O rewired. `CommandContext` deliberately does not carry a live storage handle yet. See ADR 0019. |
 | 2026-08-02 | Milestone V2-5 complete: `EventBus` (shared, un-namespaced pub-sub, failing handlers logged not fatal), `JobDefinition`/`JobContext` (a contract only, no scheduler, no cross-capability composition), and `composeProviders` (a flat, collision-checked merge with the built-in three, unlike commands/config/storage's namespacing). None wired into a live surface yet; each has its own named revisit trigger. See ADR 0020. |
+| 2026-08-02 | Milestone V2-6 complete: `src/capabilities/placeholder/`, a real second capability proving the runtime — user scope, its own config field, its own storage, its own command prefix — driven through the actual `run()` CLI entry point in `tests/capabilities/placeholder.test.ts`, not just composition-level tests. Not part of `defaultCapabilities`; the shipped `orch` binary is unchanged. Route/page registries not built: no consumer exists to give them shape. Version 2's phase Definition of Done is proven, not shipped; promoting it is a product decision left to the project owner. See ADR 0021. |
