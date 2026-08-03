@@ -239,7 +239,7 @@ describe("run", () => {
     out.lines.length = 0;
     expect(await invoke("config", "--json")).toBe(EXIT_CODES.success);
     expect(JSON.parse(out.text())).toMatchObject({
-      values: { provider: "anthropic" },
+      values: { provider: "ollama" },
       sources: { provider: "file" },
     });
   });

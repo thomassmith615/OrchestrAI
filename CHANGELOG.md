@@ -8,7 +8,27 @@ Format follows Keep a Changelog. Versioning is semantic.
 Version 2's six milestones are complete: the runtime hosts capabilities,
 proven with a real second one, without shipping it. See `docs/ROADMAP-V2.md`.
 
+### Changed
+
+- **The default provider is now `ollama`**, not `anthropic`. A fresh install
+  works immediately against a local Ollama instance with no credential, no
+  spend, and no network dependency beyond `localhost:11434`; a frontier
+  model remains one explicit `orch provider add anthropic`/`openai` away.
+  See ADR 0022.
+
 ### Added
+
+- Ollama provider (`src/providers/ollama.ts`), and a `credentialRequired?`
+  flag on `ProviderDescriptor` so `orch doctor`/`orch providers`/`orch
+  provider add` stop treating a local provider's absent credential as a
+  warning. `openai.ts` and `ollama.ts` now share one transport,
+  `src/providers/chat-completions.ts`, rather than duplicating the identical
+  chat-completions wire protocol between them; `openai.ts`'s existing test
+  suite passes unmodified against the refactor, which is the regression
+  proof that its behaviour didn't change. `doctor.ts`'s hand-maintained
+  credential map was replaced with a lookup against the real provider
+  registry, incidentally dropping a phantom `gemini` entry no provider ever
+  backed. See ADR 0022.
 
 - Milestone V2-6: the second capability, and the proof.
   - `src/capabilities/placeholder/`: a real, production-quality second

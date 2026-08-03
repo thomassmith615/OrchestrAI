@@ -9,7 +9,7 @@ import { fakeHttp } from "../support/fakes.js";
 
 describe("provider registry", () => {
   it("lists providers in a stable order", () => {
-    expect(providerIds()).toEqual(["anthropic", "mock", "openai"]);
+    expect(providerIds()).toEqual(["anthropic", "mock", "ollama", "openai"]);
   });
 
   it("exposes metadata without constructing a provider", () => {

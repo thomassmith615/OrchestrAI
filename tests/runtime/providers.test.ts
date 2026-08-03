@@ -52,12 +52,12 @@ describe("composeProviders", () => {
   });
 
   it("merges a capability's new provider alongside the built-ins without collision", () => {
-    const ollama = providerCapability("home", [stubDescriptor("ollama")]);
+    const home = providerCapability("home", [stubDescriptor("localmodel")]);
 
-    const composed = composeProviders([ollama]);
+    const composed = composeProviders([home]);
 
     const ids = composed.map((descriptor) => descriptor.id);
-    expect(ids).toContain("ollama");
+    expect(ids).toContain("localmodel");
     for (const builtin of listProviders()) {
       expect(ids).toContain(builtin.id);
     }
@@ -70,17 +70,17 @@ describe("composeProviders", () => {
   });
 
   it("throws when two capabilities declare the same new provider id", () => {
-    const first = providerCapability("first", [stubDescriptor("ollama")]);
-    const second = providerCapability("second", [stubDescriptor("ollama")]);
+    const first = providerCapability("first", [stubDescriptor("localmodel")]);
+    const second = providerCapability("second", [stubDescriptor("localmodel")]);
 
-    expect(() => composeProviders([first, second])).toThrow(/already declared: ollama/);
+    expect(() => composeProviders([first, second])).toThrow(/already declared: localmodel/);
   });
 
   it("composes against an explicit builtins list, not just the platform default", () => {
-    const home = providerCapability("home", [stubDescriptor("ollama")]);
+    const home = providerCapability("home", [stubDescriptor("localmodel")]);
 
     const composed = composeProviders([home], []);
 
-    expect(composed.map((descriptor) => descriptor.id)).toEqual(["ollama"]);
+    expect(composed.map((descriptor) => descriptor.id)).toEqual(["localmodel"]);
   });
 });

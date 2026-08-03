@@ -7,12 +7,14 @@
 import { OrchestraiError, EXIT_CODES } from "../core/errors.js";
 import { anthropicProvider } from "./anthropic.js";
 import { mockProvider } from "./mock.js";
+import { ollamaProvider } from "./ollama.js";
 import { openaiProvider } from "./openai.js";
 import type { Provider, ProviderDescriptor, ProviderOptions } from "./types.js";
 
 const DESCRIPTORS: readonly ProviderDescriptor[] = [
   anthropicProvider,
   mockProvider,
+  ollamaProvider,
   openaiProvider,
 ];
 
@@ -49,6 +51,7 @@ export function createProvider(
 
 export { anthropicProvider } from "./anthropic.js";
 export { mockProvider, MOCK_MODEL } from "./mock.js";
+export { ollamaProvider } from "./ollama.js";
 export { openaiProvider } from "./openai.js";
 export {
   backoffDelay,

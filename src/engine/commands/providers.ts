@@ -17,6 +17,8 @@ export interface ProviderStatus {
   readonly selected: boolean;
   readonly credentialEnv: string;
   readonly credentialPresent: boolean;
+  /** False for a local provider (Ollama) that works with no credential. */
+  readonly credentialRequired: boolean;
   readonly defaultModel: string;
   readonly streaming: boolean;
   /** Populated only under --verify. */
@@ -93,6 +95,9 @@ export const providersCommand: CommandDefinition<ProvidersData> = {
         selected: isSelected,
         credentialEnv: descriptor.credentialEnv,
         credentialPresent: credential !== undefined && credential !== "",
+        // Unset means required, the behaviour of every provider before this
+        // flag existed. See ADR 0022.
+        credentialRequired: descriptor.credentialRequired !== false,
         defaultModel: descriptor.defaultModel,
         streaming: descriptor.capabilities.streaming,
       };
@@ -116,7 +121,7 @@ export const providersCommand: CommandDefinition<ProvidersData> = {
           ? "pass"
           : entry.reachable === false
             ? "fail"
-            : entry.credentialPresent
+            : entry.credentialPresent || !entry.credentialRequired
               ? "pass"
               : "warn";
 
@@ -124,7 +129,9 @@ export const providersCommand: CommandDefinition<ProvidersData> = {
         entry.detail ??
         (entry.credentialPresent
           ? `${entry.credentialEnv} set`
-          : `${entry.credentialEnv} not set`);
+          : entry.credentialRequired
+            ? `${entry.credentialEnv} not set`
+            : `not required (local)`);
 
       return {
         label: entry.selected ? `${entry.id} *` : entry.id,

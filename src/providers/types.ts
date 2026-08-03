@@ -88,6 +88,15 @@ export interface ProviderDescriptor {
   readonly id: string;
   readonly displayName: string;
   readonly credentialEnv: string;
+  /**
+   * Whether `credentialEnv` must be set for this provider to work at all.
+   * Defaults to `true` when omitted, which is every provider before this
+   * field existed: unset means "acts exactly as it always has." A local
+   * runtime like Ollama sets this to `false` — a request without a
+   * credential still succeeds, so a missing one is not a warning-worthy
+   * condition the way it is for a hosted provider.
+   */
+  readonly credentialRequired?: boolean;
   readonly defaultModel: string;
   readonly capabilities: ProviderCapabilities;
   create(options: ProviderOptions): Provider;

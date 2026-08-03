@@ -91,13 +91,19 @@ Settings resolve through defaults, then `orchestrai.config.json`, then
 `ORCH_*` environment variables, then `--set`. Credentials are read from the
 environment and never written to the config file.
 
+The default provider is `ollama`: local, free, no credential required, no
+warnings from `orch doctor` on a fresh install. Pull a model first
+(`ollama pull llama3.1`, the default) and it works immediately. A frontier
+model is one explicit command away:
+
 ```bash
 export ANTHROPIC_API_KEY=...
 orch provider add anthropic
 orch providers --verify        # opt in, makes one small live request
 ```
 
-The `mock` provider is deterministic and offline: `orch provider add mock`.
+The `mock` provider is deterministic and offline, with no local runtime
+required at all: `orch provider add mock`.
 
 ## Scripts
 

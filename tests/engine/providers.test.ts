@@ -62,6 +62,20 @@ describe("providersCommand", () => {
     expect(result.exitCode).toBe(0);
   });
 
+  it("does not warn on ollama's missing credential, since none is required", async () => {
+    const fs = seed({ provider: "ollama" });
+    const result = await providersCommand.execute(
+      fakeContext({ workspace, config: configWith(fs), hosts: fakeHosts({ fs }) }),
+    );
+
+    const ollama = result.data.providers.find((p) => p.id === "ollama");
+    expect(ollama?.credentialPresent).toBe(false);
+    expect(ollama?.credentialRequired).toBe(false);
+    const field = result.report.fields.find((entry) => entry.label === "ollama *");
+    expect(field?.status).toBe("pass");
+    expect(field?.value).toContain("not required");
+  });
+
   it("makes no requests unless --verify is passed", async () => {
     const fs = seed({ provider: "anthropic" });
     const http = fakeHttp();
@@ -196,6 +210,24 @@ describe("providerAddCommand", () => {
     );
 
     expect(fs.files.get(CONFIG_PATH)).not.toContain("sk-secret");
+  });
+
+  it("reports the credential as not required when selecting ollama", async () => {
+    const fs = seed();
+
+    const result = await providerAddCommand.execute(
+      fakeContext({
+        workspace,
+        config: configWith(fs),
+        args: ["ollama"],
+        hosts: fakeHosts({ fs }),
+      }),
+    );
+
+    expect(result.report.notes).toEqual([]);
+    const field = result.report.fields.find((entry) => entry.label === "Credential");
+    expect(field?.status).toBe("pass");
+    expect(field?.value).toContain("not required");
   });
 
   it("rejects an unknown provider", async () => {

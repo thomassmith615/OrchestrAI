@@ -49,7 +49,7 @@ describe("buildBaseContext", () => {
     const base = buildBaseContext("/tmp", hostsWith({}), []);
 
     expect(base.workspace).toBeNull();
-    expect(base.config?.values.provider).toBe("anthropic");
+    expect(base.config?.values.provider).toBe("ollama");
   });
 });
 

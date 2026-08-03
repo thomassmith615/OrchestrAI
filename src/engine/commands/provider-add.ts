@@ -58,10 +58,14 @@ export const providerAddCommand: CommandDefinition<ProviderAddData> = {
 
     const credential = context.hosts.env[descriptor.credentialEnv];
     const credentialPresent = credential !== undefined && credential !== "";
+    // Unset means required, the behaviour of every provider before this flag
+    // existed. See ADR 0022.
+    const credentialRequired = descriptor.credentialRequired !== false;
 
-    const notes = credentialPresent
-      ? []
-      : [`${descriptor.credentialEnv} must be set in the environment before use.`];
+    const notes =
+      credentialPresent || !credentialRequired
+        ? []
+        : [`${descriptor.credentialEnv} must be set in the environment before use.`];
 
     return Promise.resolve({
       data: {
@@ -84,8 +88,10 @@ export const providerAddCommand: CommandDefinition<ProviderAddData> = {
             label: "Credential",
             value: credentialPresent
               ? `${descriptor.credentialEnv} set`
-              : `${descriptor.credentialEnv} not set`,
-            status: credentialPresent ? "pass" : "warn",
+              : credentialRequired
+                ? `${descriptor.credentialEnv} not set`
+                : `not required for ${descriptor.displayName}`,
+            status: credentialPresent || !credentialRequired ? "pass" : "warn",
           },
         ],
         notes,

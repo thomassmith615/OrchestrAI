@@ -107,6 +107,30 @@ describe("doctorCommand", () => {
     expect(result.data.failures).toBe(0);
   });
 
+  it("reports ollama's missing credential as pass, not warn", async () => {
+    const fs = fakeFileSystem({
+      "/repo/orchestrai.config.json": JSON.stringify({ provider: "ollama" }),
+    });
+    const config = resolveConfig({
+      configPath: "/repo/orchestrai.config.json",
+      fs,
+      env: {},
+    });
+
+    const result = await doctorCommand.execute(
+      fakeContext({
+        workspace,
+        config,
+        hosts: fakeHosts({ env: {} }),
+        scope: { kind: "repository", workspace },
+      }),
+    );
+
+    expect(statusOf(result.data.checks, "Credentials")).toBe("pass");
+    expect(result.data.failures).toBe(0);
+    expect(result.data.warnings).toBe(0);
+  });
+
   it("warns rather than fails when no scope resolves at all", async () => {
     const result = await doctorCommand.execute(fakeContext({ scope: null }));
 

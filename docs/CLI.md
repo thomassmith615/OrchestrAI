@@ -115,8 +115,18 @@ orch providers --verify         # minimal live request, opt in
 export ANTHROPIC_API_KEY=...    # credentials come from the environment only
 ```
 
-The `mock` provider is deterministic and offline. Use it to exercise
-orchestration without spending anything: `orch provider add mock`.
+**`ollama` is the default**, so a fresh install works with no credential, no
+spend, and no network dependency beyond `localhost:11434`: it speaks the same
+chat-completions protocol `openai` does, against a local Ollama instance.
+`orch doctor`/`orch providers` never warn about a missing `OLLAMA_API_KEY` —
+none is required. Pull a model first (`ollama pull llama3.1`, the default;
+`--model` selects another), then a frontier model is one explicit command
+away: `orch provider add anthropic` or `orch provider add openai`. See
+ADR 0022.
+
+The `mock` provider is deterministic and offline, with no local runtime
+required at all. Use it to exercise orchestration mechanics without spending
+anything or needing Ollama installed: `orch provider add mock`.
 
 `--verify` propagates the provider's exit code, so a bad key exits 5 and a
 transport failure exits 1.

@@ -113,7 +113,9 @@ export const CONFIG_FIELDS: Readonly<Record<ConfigKey, FieldSpec>> = {
 export const CONFIG_KEYS = Object.keys(CONFIG_FIELDS) as readonly ConfigKey[];
 
 export const DEFAULT_CONFIG: ConfigValues = {
-  provider: "anthropic",
+  // Local and free by default; a frontier model is an explicit opt in
+  // (`orch provider add anthropic`, or `openai`). See ADR 0022.
+  provider: "ollama",
   model: null,
   roadmapPath: "docs/ROADMAP.md",
   logLevel: "info",

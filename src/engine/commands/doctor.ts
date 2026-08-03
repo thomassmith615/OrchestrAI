@@ -7,17 +7,11 @@
  */
 import { EXIT_CODES, describeError } from "../../core/errors.js";
 import { CONFIG_FILE_NAME, STATE_DIR_NAME } from "../../core/workspace.js";
+import { findProvider } from "../../providers/index.js";
 import type { CommandContext, CommandDefinition, CommandResult, FieldStatus } from "../command.js";
 
 /** Minimum supported runtime, matching the `engines` field. */
 const MINIMUM_NODE = { major: 20, minor: 11 };
-
-/** Environment variable holding the credential for each known provider. */
-const CREDENTIAL_ENV: Readonly<Record<string, string>> = {
-  anthropic: "ANTHROPIC_API_KEY",
-  openai: "OPENAI_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
 
 export interface Check {
   readonly name: string;
@@ -120,21 +114,31 @@ export const doctorCommand: CommandDefinition<DoctorData> = {
       });
     }
 
-    const provider = context.config?.values.provider ?? "anthropic";
-    const credentialVar = CREDENTIAL_ENV[provider];
-    if (credentialVar === undefined) {
+    const provider = context.config?.values.provider ?? "ollama";
+    const descriptor = findProvider(provider);
+
+    if (descriptor === undefined) {
       checks.push({
         name: "Credentials",
         status: "warn",
-        detail: `no known credential variable for provider "${provider}"`,
+        detail: `unknown provider "${provider}"`,
       });
     } else {
       const present =
-        env[credentialVar] !== undefined && env[credentialVar] !== "";
+        env[descriptor.credentialEnv] !== undefined &&
+        env[descriptor.credentialEnv] !== "";
+      // Unset means required, the behaviour of every provider before this
+      // flag existed. See ADR 0022.
+      const required = descriptor.credentialRequired !== false;
+
       checks.push({
         name: "Credentials",
-        status: present ? "pass" : "warn",
-        detail: present ? `${credentialVar} set` : `${credentialVar} not set`,
+        status: present || !required ? "pass" : "warn",
+        detail: present
+          ? `${descriptor.credentialEnv} set`
+          : required
+            ? `${descriptor.credentialEnv} not set`
+            : `not required for ${descriptor.displayName}`,
       });
     }
 
