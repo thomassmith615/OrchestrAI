@@ -84,6 +84,16 @@ export interface UserScope {
 export type Scope = RepositoryScope | UserScope;
 
 /**
+ * The state directory a scope roots itself at, regardless of kind: a
+ * repository's `.orchestrai/`, or the user scope's own `stateDir`. This is
+ * the one directory a capability's storage namespace (V2-4) attaches under;
+ * see `src/runtime/storage.ts`.
+ */
+export function scopeStateDir(scope: Scope): string {
+  return scope.kind === "repository" ? scope.workspace.stateDir : scope.stateDir;
+}
+
+/**
  * Reads the home directory through the injected environment host rather than
  * `process.env` directly, so scope resolution stays testable. `HOME` covers
  * macOS and Linux; `USERPROFILE` covers Windows.

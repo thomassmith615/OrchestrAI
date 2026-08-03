@@ -13,7 +13,7 @@ implement the next unchecked one.
 
 **Status legend:** `[x]` complete, `[ ]` not started.
 
-**Current position:** V2-3 complete.
+**Current position:** V2-5 complete.
 
 **The phase's Definition of Done** (not yet reached): the runtime hosts two
 capabilities; Engineering is one; a trivial placeholder is the other; the
@@ -62,17 +62,40 @@ anywhere; and at no point does the runtime branch on a capability's identity.
   widening tested, load-bearing code, so that wiring is a named revisit
   trigger rather than done speculatively. See ADR 0018.
 
-- [ ] **V2-4. Namespaced storage**
-  Each capability gets a storage handle rooted at its own directory (under
-  the resolved scope's state directory) and unable to address anything above
-  it. Engineering keeps the shared `.orchestrai/` root it has always used.
+- [x] **V2-4. Namespaced storage**
+  `Capability.storageNamespace?: string` and `createCapabilityStorage(scope,
+  namespace, fs)` (`src/runtime/storage.ts`) give a capability a
+  `FileSystemHost` confined to its own directory under the resolved scope's
+  state directory — not a new interface, the same one every command already
+  receives, just with every path checked for containment before it reaches
+  the real filesystem. Two differently-namespaced capabilities cannot
+  collide or reach each other's files, proven in
+  `tests/runtime/storage.test.ts` with an actual `../` escape attempt, not
+  just by directory naming. Engineering declares the root namespace, proven
+  equal to `.orchestrai/` by test; nothing in `src/memory`, `src/gates`, or
+  `src/proposals` was touched. `CommandContext` deliberately does not gain a
+  live storage field yet — no command has anything to persist through it —
+  so that wiring is a named revisit trigger, not done speculatively. See
+  ADR 0019.
 
-- [ ] **V2-5. Events, jobs, and provider registration**
-  A typed, synchronous, in-process event emitter (event names of the form
-  `<capability>.<noun>.<verb>`; failing handlers are logged, not fatal). Job
-  definitions as contracts only — no scheduler; `launchd` already exists for
-  a single always-on Mac. Providers become something a capability can
-  register rather than something only core knows about.
+- [x] **V2-5. Events, jobs, and provider registration**
+  Three extension points, each with a genuinely different composition shape
+  once examined closely — the milestone's own finding. `EventBus`
+  (`src/runtime/events.ts`) is a shared, un-namespaced pub-sub bus: event
+  names are a `<capability>.<noun>.<verb>` convention, not an enforced
+  namespace, since multiple listeners sharing a name is the point, not a
+  collision; a throwing or rejecting handler is logged and never breaks
+  another's. `JobDefinition`/`JobContext` (`src/runtime/jobs.ts`) are a
+  contract only — no scheduler, no cross-capability name composition, since
+  nothing yet addresses a job by name. `composeProviders`
+  (`src/runtime/providers.ts`) merges a capability's declared providers with
+  the existing built-in three into one flat, collision-checked registry,
+  matching providers' existing flat, human-facing convention (`orch provider
+  add <name>`); Engineering declares no `providers()`, since providers were
+  never capability-mediated even in v1. None of `orch providers`, `orch
+  provider add`, `createProvider`, or `assembleRuntime()` were touched — all
+  three mechanisms are proven correct without a live consumer, each with its
+  own named revisit trigger. See ADR 0020.
 
 - [ ] **V2-6. Routes, pages, and the proof**
   Route and page registries, generalizing the read-only dashboard from
@@ -91,3 +114,5 @@ anywhere; and at no point does the runtime branch on a capability's identity.
 | 2026-08-02 | Milestone V2-1 complete: capability contract, registry, and activation in `src/runtime/`; Engineering declared as the first capability in `src/capabilities/engineering/`, with no implementation moved; `orch capabilities`. See ADR 0016. |
 | 2026-08-02 | Milestone V2-2 complete: `Scope` (repository or user) replaces the git-repository assumption in the command contract; `CommandRequirements.repository` replaced by `CommandRequirements.scope`, defaulting to repository; `orch info` and `orch doctor` report the active scope. See ADR 0017. |
 | 2026-08-02 | Milestone V2-3 complete: `Capability.configSchema?()` and `composeConfigSchemas` let capabilities declare and merge namespaced config fields; Engineering's table composes byte for byte with `CONFIG_FIELDS`/`DEFAULT_CONFIG`. `resolveConfig`/`orch config` deliberately left unwired pending a second capability with a real field. See ADR 0018. |
+| 2026-08-02 | Milestone V2-4 complete: `Capability.storageNamespace?` and `createCapabilityStorage` give a capability a `FileSystemHost` confined to its own directory, with containment enforced on every path, not just implied by naming. Engineering's declared namespace resolves to `.orchestrai/` itself, proven by test, with no file I/O rewired. `CommandContext` deliberately does not carry a live storage handle yet. See ADR 0019. |
+| 2026-08-02 | Milestone V2-5 complete: `EventBus` (shared, un-namespaced pub-sub, failing handlers logged not fatal), `JobDefinition`/`JobContext` (a contract only, no scheduler, no cross-capability composition), and `composeProviders` (a flat, collision-checked merge with the built-in three, unlike commands/config/storage's namespacing). None wired into a live surface yet; each has its own named revisit trigger. See ADR 0020. |

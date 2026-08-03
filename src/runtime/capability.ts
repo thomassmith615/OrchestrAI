@@ -11,6 +11,8 @@
  */
 import type { CommandDefinition } from "../engine/command.js";
 import type { FieldSpec } from "../core/config/schema.js";
+import type { JobDefinition } from "./jobs.js";
+import type { ProviderDescriptor } from "../providers/types.js";
 
 /**
  * Configuration fields a capability contributes, namespaced under its own
@@ -44,6 +46,31 @@ export interface Capability {
    * with nothing to configure omits this entirely.
    */
   configSchema?(): CapabilityConfigSchema;
+  /**
+   * Directory namespace this capability's persistent state lives under,
+   * relative to the active scope's state directory, e.g. `home` roots its
+   * storage at `<stateDir>/home`. Empty string roots directly at the state
+   * directory — Engineering's concession, same shape as its empty
+   * `commandPrefix`. A capability with nothing to persist omits this.
+   *
+   * Kept independent of `commandPrefix` rather than reusing it: a future
+   * capability could reasonably want bare top-level commands while still
+   * wanting its files isolated from Engineering's `.orchestrai/memory`,
+   * `.orchestrai/gates.json`, and so on, which sharing the empty prefix
+   * would prevent. See ADR 0019.
+   */
+  readonly storageNamespace?: string;
+  /**
+   * Jobs this capability declares. A contract only — nothing runs them.
+   * A capability with nothing to schedule omits this. See ADR 0020.
+   */
+  jobs?(): readonly JobDefinition[];
+  /**
+   * AI providers this capability contributes, beyond the built-in
+   * `anthropic`/`openai`/`mock` three. A capability with nothing new to add
+   * omits this. See ADR 0020.
+   */
+  providers?(): readonly ProviderDescriptor[];
 }
 
 /**

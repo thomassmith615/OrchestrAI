@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { engineeringCapability } from "../../src/capabilities/engineering/index.js";
 import { createRegistry } from "../../src/engine/index.js";
 import { CONFIG_FIELDS, DEFAULT_CONFIG } from "../../src/core/config/schema.js";
+import { storageRoot } from "../../src/runtime/storage.js";
+import type { RepositoryScope } from "../../src/core/workspace.js";
 
 describe("engineeringCapability", () => {
   it("declares an empty command prefix, a backwards-compatibility concession", () => {
@@ -22,5 +24,22 @@ describe("engineeringCapability", () => {
     expect(schema?.namespace).toBe("");
     expect(schema?.fields).toEqual(CONFIG_FIELDS);
     expect(schema?.defaults).toEqual(DEFAULT_CONFIG);
+  });
+
+  it("declares an empty storage namespace, resolving to .orchestrai/ itself", () => {
+    const scope: RepositoryScope = {
+      kind: "repository",
+      workspace: {
+        root: "/repo",
+        stateDir: "/repo/.orchestrai",
+        configPath: "/repo/orchestrai.config.json",
+        initialized: true,
+      },
+    };
+
+    expect(engineeringCapability.storageNamespace).toBe("");
+    expect(storageRoot(scope, engineeringCapability.storageNamespace ?? "")).toBe(
+      scope.workspace.stateDir,
+    );
   });
 });

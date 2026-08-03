@@ -17,9 +17,14 @@ export {
   buildCapabilitiesCommand,
   CapabilityRegistry,
   composeConfigSchemas,
+  composeProviders,
+  createCapabilityStorage,
+  EventBus,
   namespacedFieldKey,
   namespacedFieldKeys,
   prefixedCommandName,
+  StorageContainmentError,
+  storageRoot,
 } from "./runtime/index.js";
 export {
   assembleRuntime,
@@ -56,6 +61,7 @@ export {
   resolveScope,
   resolveUserScope,
   resolveWorkspace,
+  scopeStateDir,
 } from "./core/workspace.js";
 export {
   describeError,
@@ -90,7 +96,12 @@ export type {
   CapabilityActivation,
   CapabilityConfigSchema,
   CapabilityFailure,
+  CapabilityStorage,
   ComposedConfigSchema,
+  EventBusOptions,
+  EventHandler,
+  JobContext,
+  JobDefinition,
 } from "./runtime/index.js";
 export type { RuntimeAssembly } from "./capabilities/index.js";
 export type { BaseContext } from "./cli/context.js";

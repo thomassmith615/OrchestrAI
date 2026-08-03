@@ -14,6 +14,13 @@
  * Its config namespace is the same concession, applied to configuration:
  * empty, so `orchestrai.config.json`'s existing keys (`provider`, `model`,
  * ...) are unaffected. See ADR 0018.
+ *
+ * Its storage namespace is the same concession again: empty, so it resolves
+ * to `.orchestrai/` itself, exactly where memory, gates, and proposals have
+ * always lived. Nothing in `src/memory`, `src/gates`, or `src/proposals`
+ * was touched or routed through `CapabilityStorage` — this is a
+ * declaration, proven equal to the real directory by test, not a rewire.
+ * See ADR 0019.
  */
 import { createRegistry } from "../../engine/index.js";
 import { ENGINEERING_CONFIG_TABLE } from "../../core/config/schema.js";
@@ -25,6 +32,7 @@ export const engineeringCapability: Capability = {
   summary:
     "Repository understanding, providers, verification gates, proposals, and the workflow engine: everything Orchestraᵢ v1 did.",
   commandPrefix: "",
+  storageNamespace: "",
   commands(): readonly CommandDefinition[] {
     return createRegistry().list();
   },

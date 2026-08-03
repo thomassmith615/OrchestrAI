@@ -10,6 +10,49 @@ Capability. See `docs/ROADMAP-V2.md`.
 
 ### Added
 
+- Milestone V2-5: events, jobs, and provider registration.
+  - `EventBus` (`src/runtime/events.ts`): a shared, synchronous, in-process
+    pub-sub emitter. Event names (`<capability>.<noun>.<verb>`) are a
+    convention, not an enforced namespace — multiple listeners sharing a
+    name is the point. A handler that throws or rejects is logged as a
+    warning and never stops another handler, or `emit`, from completing.
+  - `JobDefinition`/`JobContext` (`src/runtime/jobs.ts`): a contract for a
+    capability-declared unit of work. No scheduler; no cross-capability name
+    composition, since nothing yet addresses a job by name.
+  - `composeProviders` (`src/runtime/providers.ts`): merges a capability's
+    declared `ProviderDescriptor`s with the built-in three
+    (`anthropic`/`openai`/`mock`) into one flat, collision-checked list —
+    flat rather than namespaced, matching the existing `orch provider add
+    <name>` convention. `src/providers/index.ts` is untouched.
+  - `Capability` gained two more optional methods, `jobs?()` and
+    `providers?()`. Engineering declares neither: it has no jobs, and
+    providers were never capability-mediated even in Version 1.
+  - None of the three is wired into a live surface (`assembleRuntime()`,
+    `orch providers`, `orch provider add`, `createProvider` are all
+    unchanged); each has its own named revisit trigger. See ADR 0020.
+
+- Milestone V2-4: namespaced storage.
+  - `CapabilityStorage` (`src/runtime/storage.ts`): a `FileSystemHost`
+    confined to one directory — not a new interface, the same one every
+    command already receives via `context.hosts.fs`. Every path is checked
+    for containment (`path.relative` against the root) before it reaches the
+    real filesystem, so a capability cannot address another's files or
+    anything above its own root.
+  - `Capability.storageNamespace?: string`: an optional declaration, kept
+    independent of `commandPrefix` so a capability can choose bare top-level
+    commands without also giving up storage isolation.
+  - `createCapabilityStorage(scope, namespace, fs)` and `storageRoot`,
+    namespacing with `/` under the active scope's state directory the way
+    commands namespace with a space and config fields namespace with a dot.
+  - Engineering declares the root storage namespace, proven by test to
+    resolve to `.orchestrai/` itself; `src/memory`, `src/gates`, and
+    `src/proposals` were not touched.
+  - `tests/runtime/storage.test.ts` proves the milestone's actual claim: two
+    differently-namespaced capabilities persist same-named files with no
+    collision, and neither can reach the other's via a `../` escape attempt.
+  - `CommandContext` deliberately does not gain a live storage field yet —
+    no command has anything to persist through it. See ADR 0019.
+
 - Milestone V2-3: namespaced configuration.
   - `Capability.configSchema?()`: an optional method a capability uses to
     declare its own configuration fields (specs and defaults, unprefixed,

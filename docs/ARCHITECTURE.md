@@ -69,7 +69,7 @@ allowed to name one. See ADR 0016.
 | --- | --- | --- |
 | `src/core` | Errors, exit codes, logging, injectable hosts, config, workspace and scope. No AI awareness. | M1, M2, V2-2 |
 | `src/engine` | Command contract and registry. The stable interface every surface uses. | M1 |
-| `src/runtime` | Capability contract, `CapabilityRegistry`, activation. Lifecycle only: register, activate, assemble, report. Never names a capability. | V2-1 |
+| `src/runtime` | Capability contract, `CapabilityRegistry`, activation, config/storage/provider composition, the event bus, the job contract. Lifecycle only: register, activate, assemble, report. Never names a capability. | V2-1, V2-3, V2-4, V2-5 |
 | `src/capabilities` | First-party capabilities and the composition root that names them (`assembleRuntime`). Engineering is the first; its implementation still lives where M1-M12 put it. | V2-1 |
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
@@ -158,6 +158,62 @@ They still resolve directly against `CONFIG_FIELDS`/`DEFAULT_CONFIG`, exactly
 as in Version 1. Wiring them to the composed mechanism is deferred until a
 second capability declares a real field worth resolving — a named revisit
 trigger, not an oversight. See ADR 0018.
+
+## Storage namespacing (V2)
+
+A `CapabilityStorage` is a `FileSystemHost` — the same interface
+`context.hosts.fs` already is, not a new one — confined to one directory:
+`createCapabilityStorage(scope, namespace, fs)` roots it at the active
+scope's state directory plus the capability's declared
+`storageNamespace`, joined with `/` the way commands join with a space and
+config fields join with a dot. Every path passed to it is checked for
+containment before reaching the real filesystem, so a capability cannot
+address another's files, or its own parent directory, even by construction.
+Engineering declares the root namespace, resolving to `.orchestrai/` itself
+— its usual concession — with `src/memory`, `src/gates`, and `src/proposals`
+untouched.
+
+**`CommandContext` does not carry a live storage handle yet.** No command
+has anything to persist through this mechanism today. Wiring it in is
+deferred until a capability's command actually needs to read or write its
+own state during execution — a named revisit trigger, not an oversight. See
+ADR 0019.
+
+## Events, jobs, and providers (V2)
+
+Three more extension points, each composed differently because each
+resource behaves differently:
+
+- **`EventBus`** (`src/runtime/events.ts`) is a shared, un-namespaced
+  pub-sub emitter. Event names (`<capability>.<noun>.<verb>`) are a
+  convention, not enforced, because multiple listeners sharing a name is
+  the point of a bus, not a collision — unlike a command name, a config
+  key, or a storage path, none of which tolerate two owners. A handler
+  that throws or rejects is logged and never breaks another's, or the
+  caller's `emit`.
+- **`JobDefinition`/`JobContext`** (`src/runtime/jobs.ts`) are a contract
+  only: `{ name, description, run(context) }`. No scheduler exists or is
+  planned — `launchd` already serves a single always-on Mac — and job
+  names are not composed or checked for collision across capabilities,
+  because nothing yet addresses one by name.
+- **`composeProviders`** (`src/runtime/providers.ts`) merges a capability's
+  declared `ProviderDescriptor`s with the built-in three into one flat,
+  collision-checked list — flat, not namespaced, because provider ids are
+  already a shared, human-facing vocabulary (`orch provider add <name>`).
+  Engineering declares no `providers()`: unlike commands, config, and
+  storage, providers were never capability-mediated even in Version 1.
+
+**None of the three has a live production consumer yet.**
+`assembleRuntime()`, `orch providers`, `orch provider add`, and
+`createProvider` are all untouched. Each has its own named revisit trigger,
+recorded in ADR 0020, rather than being wired in speculatively.
+
+`JobContext`'s `{ logger, hosts }` is not an early draft of a future runtime
+service container — logger, scope, configuration, storage, providers, and
+events will eventually want one clean injection mechanism, but building it
+before three or four of these narrow, per-purpose context types have
+actually accumulated would be designing for a shape not yet known. See ADR
+0020.
 
 ## Data flow for a milestone run (target state, M9)
 
