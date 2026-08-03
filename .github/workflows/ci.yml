@@ -83,21 +83,21 @@ jobs:
       - name: Initialize and diagnose
         run: |
           node dist/cli/main.js init
-          node dist/cli/main.js doctor --json > doctor.json
+          node dist/cli/main.js doctor --json > "$RUNNER_TEMP/doctor.json"
           # Credentials are absent in CI, which is a warning, not a failure.
-          test "$(jq '.failures' doctor.json)" = "0"
+          test "$(jq '.failures' "$RUNNER_TEMP/doctor.json")" = "0"
 
       - name: Repository awareness
         run: |
-          node dist/cli/main.js status --json > status.json
-          test "$(jq -r '.toolchain.ecosystem' status.json)" = "node"
-          test "$(jq '.scan.files > 0' status.json)" = "true"
-          test "$(jq '.scan.truncated' status.json)" = "false"
+          node dist/cli/main.js status --json > "$RUNNER_TEMP/status.json"
+          test "$(jq -r '.toolchain.ecosystem' "$RUNNER_TEMP/status.json")" = "node"
+          test "$(jq '.scan.files > 0' "$RUNNER_TEMP/status.json")" = "true"
+          test "$(jq '.scan.truncated' "$RUNNER_TEMP/status.json")" = "false"
 
       - name: Context packing stays inside its budget
         run: |
-          node dist/cli/main.js context --json > context.json
-          test "$(jq '.tokens <= .usable' context.json)" = "true"
+          node dist/cli/main.js context --json > "$RUNNER_TEMP/context.json"
+          test "$(jq '.tokens <= .usable' "$RUNNER_TEMP/context.json")" = "true"
 
       - name: Memory round trip
         run: |
@@ -110,9 +110,12 @@ jobs:
         run: |
           node dist/cli/main.js provider add mock
           node dist/cli/main.js next --dry-run
-          node dist/cli/main.js propose "add a marker file" --json > proposal.json
-          test "$(jq '.summary.files > 0' proposal.json)" = "true"
-          # A proposal must not touch the working tree.
+          node dist/cli/main.js propose "add a marker file" --json > "$RUNNER_TEMP/proposal.json"
+          test "$(jq '.summary.files > 0' "$RUNNER_TEMP/proposal.json")" = "true"
+          # A proposal must not touch the working tree. Earlier steps' own
+          # --json output goes to $RUNNER_TEMP for the same reason: this
+          # check should fail on `propose` touching the tree, not on the
+          # smoke job's own scratch files sitting in it.
           test -z "$(git status --porcelain -- . ':!.orchestrai' ':!orchestrai.config.json')"
 
       - name: Exit codes are meaningful
