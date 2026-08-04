@@ -109,11 +109,14 @@ export const proposeCommand: CommandDefinition<ProposeData> = {
       throw new UsageError("A task description is required");
     }
 
+    // Only an explicit `--focus` is passed on. Deriving terms from the task is
+    // the resolver's job now, and it distinguishes terms the user chose from
+    // terms it inferred: an explicit one is trusted even when it is lower case.
     const focusOption = context.options["focus"];
     const focus =
       typeof focusOption === "string"
         ? focusOption.split(/[,\s]+/).filter((term) => term.length > 0)
-        : task.split(/[^a-zA-Z0-9_-]+/).filter((term) => term.length > 3);
+        : undefined;
 
     const maxTokensOption = context.options["maxTokens"];
     const maxTokens =
@@ -124,7 +127,7 @@ export const proposeCommand: CommandDefinition<ProposeData> = {
     const outcome = await completeWithContext(context, {
       promptId: "propose",
       variables: { task },
-      focus,
+      ...(focus === undefined ? {} : { focus }),
       ...(maxTokens === undefined || Number.isNaN(maxTokens)
         ? {}
         : { maxTokens }),
@@ -172,9 +175,29 @@ export const proposeCommand: CommandDefinition<ProposeData> = {
 
     void config;
 
+    // Say what the task was resolved to before saying what came back. When a
+    // proposal is wrong the first question is what the model was shown, and
+    // "these files, because they reference this symbol" is a real answer.
+    const resolved = outcome.workingSet;
+
     return {
       data: { proposal, summary: changeSummary(proposal.changes) },
-      report: { fields: proposalFields(proposal), notes },
+      report: {
+        fields: [
+          ...proposalFields(proposal),
+          ...(resolved.symbols.length === 0
+            ? []
+            : [
+                {
+                  label: "Resolved",
+                  value: `${resolved.symbols.join(", ")} in ${String(
+                    resolved.required.length,
+                  )} files`,
+                },
+              ]),
+        ],
+        notes,
+      },
     };
   },
 };

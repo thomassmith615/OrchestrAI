@@ -74,8 +74,8 @@ allowed to name one. See ADR 0016.
 | `src/cli` | Commander adaptation, rendering, global flags. Contains no logic. | M1 |
 | `src/providers` | One file per provider behind a single interface, plus the registry. | M3 |
 | `src/prompts` | Versioned `.md` templates, typed interpolation, registry. | M6 |
-| `src/repo` | Scanning, ignore rules, language and toolchain detection, git state. | M4, M5 |
-| `src/context` | Ranking, token budgeting, and assembly of what a model sees. | M6 |
+| `src/repo` | Scanning, ignore rules, language and toolchain detection, git state, the symbol index. | M4, M5, E1 |
+| `src/context` | Working set resolution, ranking, token budgeting, and assembly of what a model sees. | M6, E2 |
 | `src/memory` | Append-only records and ranked retrieval behind one interface. | M10 |
 | `src/gates` | Gate execution against the detected toolchain, and result persistence. | M5 |
 | `src/proposals` | Change parsing, staging, diffing, and application. The write path. | M7 |

@@ -8,7 +8,35 @@ Format follows Keep a Changelog. Versioning is semantic.
 Version 2's six milestones are complete: the runtime hosts capabilities,
 proven with a real second one, without shipping it. See `docs/ROADMAP-V2.md`.
 
+### Fixed
+
+- **`.orchestrai` is no longer scanned as repository source.** The state
+  directory is meant to be committed, so no gitignore excluded it, and it
+  holds a complete copy of every proposed file under `proposals/<id>/files/`.
+  The scanner was feeding Orchestraᵢ's own staging area back to the model:
+  rejected code indistinguishable from current code, duplicate files
+  competing for the same budget, and a context that degraded a little further
+  with every proposal ever made. See ADR 0023.
+
 ### Changed
+
+- **Context is resolved before it is ranked.** A task that names an identifier
+  the repository declares now packs every file referencing it *first*,
+  labelled with why, and fails rather than dropping any of them for budget.
+  Ranking scores file paths, so it found a rename's declaration site and
+  missed every reference site whose path said nothing about the symbol —
+  which is the entire job, and why `orch propose "rename X to Y"` could
+  return nothing but an explanation of what it had not been shown. A task
+  that names no symbol resolves to nothing and packs exactly as before, which
+  is why all 464 pre-existing tests pass unchanged. See ADR 0023 and
+  `docs/REVIEW-0001-context-resolution.md`.
+
+- An unconfigured `contextBudget` now defers to the provider's declared
+  context window when that window is smaller and the default model is in use.
+  `capabilities.contextTokens` was declared by every provider and read
+  nowhere, so packing 75,000 tokens for a local model that accepts 8,000
+  failed at the API boundary instead of the decision point. A configured
+  budget, or a configured model, is still obeyed.
 
 - **The default provider is now `ollama`**, not `anthropic`. A fresh install
   works immediately against a local Ollama instance with no credential, no
@@ -17,6 +45,25 @@ proven with a real second one, without shipping it. See `docs/ROADMAP-V2.md`.
   See ADR 0022.
 
 ### Added
+
+- The symbol layer, and the resolution step that uses it.
+  - `src/repo/symbols.ts`: lexical extraction of what a file declares and
+    what it mentions. A tokenizer and a keyword table, no parser and no
+    compiler; its two limitations both err toward over-inclusion, which
+    costs tokens where under-inclusion costs correctness.
+  - `src/repo/symbol-index.ts`: the inverted index, identifier to files.
+    Built in memory per command; measured at 0.265s against 0.281s without
+    it on this repository, which is why it is not yet persisted.
+  - `src/context/resolve.ts`: turns a task into a required file set. No task
+    classifier — whether a task is mechanical or open ended falls out of
+    whether its terms resolve to real declarations, which is a fact about
+    the repository rather than a guess about the sentence.
+  - `assembleContext` in `src/engine/ai.ts`: the one place scanning,
+    resolution, and packing come together, so `orch context` shows what the
+    provider actually gets.
+  - `orch context "<a task>"` reports what the task resolves to, and
+    `orch propose` reports the same line, so what the model was shown is
+    answerable without re-running anything.
 
 - Ollama provider (`src/providers/ollama.ts`), and a `credentialRequired?`
   flag on `ProviderDescriptor` so `orch doctor`/`orch providers`/`orch

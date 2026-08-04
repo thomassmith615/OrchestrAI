@@ -5,13 +5,36 @@
  * come together, so that every command that talks to a model does it the same
  * way and records the same metadata.
  */
-import { packContext, recentlyChanged } from "../context/index.js";
-import { detectToolchain, scanRepository } from "../repo/index.js";
-import { createProvider, estimateCost, isRetryable, withRetry } from "../providers/index.js";
+import {
+  EMPTY_WORKING_SET,
+  packContext,
+  rankingTerms,
+  recentlyChanged,
+  resolveWorkingSet,
+  symbolTerms,
+} from "../context/index.js";
+import {
+  buildSymbolIndex,
+  detectToolchain,
+  scanRepository,
+} from "../repo/index.js";
+import {
+  createProvider,
+  estimateCost,
+  findProvider,
+  isRetryable,
+  withRetry,
+} from "../providers/index.js";
 import { defaultRetriever, readMemory, recordUsage } from "../memory/index.js";
 import { findPrompt, promptRef, renderPrompt } from "../prompts/index.js";
 import { requireConfig, requireWorkspace } from "./command.js";
-import type { PackedContext } from "../context/index.js";
+import type {
+  ContextNote,
+  PackedContext,
+  TermOptions,
+  WorkingSet,
+} from "../context/index.js";
+import type { Toolchain } from "../repo/index.js";
 import type { CompletionResult } from "../providers/index.js";
 import type { CommandContext } from "./command.js";
 import type { AiCall, AiPort, AiReply } from "../workflow/index.js";
@@ -27,6 +50,8 @@ export interface AiRequest {
 export interface AiOutcome {
   readonly result: CompletionResult;
   readonly packed: PackedContext;
+  /** Files the task was resolved to require, and the symbols that named them. */
+  readonly workingSet: WorkingSet;
   /** Ids of the memory records recalled into the context. */
   readonly recalled: readonly string[];
   readonly retries: number;
@@ -71,10 +96,65 @@ export function aiPort(
   };
 }
 
-export async function completeWithContext(
+export interface AssemblyRequest {
+  /** The task or objective as the user phrased it. */
+  readonly task?: string;
+  /** Terms the user named explicitly. Absent means "derive them from the task". */
+  readonly focus?: readonly string[];
+  readonly notes?: readonly ContextNote[];
+}
+
+export interface Assembly {
+  readonly packed: PackedContext;
+  readonly workingSet: WorkingSet;
+  /** The ranking terms actually used, derived or explicit. */
+  readonly focus: readonly string[];
+  readonly toolchain: Toolchain;
+}
+
+/**
+ * How much context this call may use.
+ *
+ * A configured budget is an instruction and is obeyed. An unconfigured one is
+ * just the built in default, and the provider's own declared window is a better
+ * number than a constant — packing 75,000 tokens for a local model that accepts
+ * 8,000 fails at the API boundary when it could have been decided here. The
+ * window is only trusted when the default model is in use, because a configured
+ * model has a window the descriptor knows nothing about.
+ */
+function resolveBudget(
+  config: ReturnType<typeof requireConfig>,
+  logger: CommandContext["logger"],
+): number {
+  const configured = config.values.contextBudget;
+
+  if (config.sources.contextBudget !== "default" || config.values.model !== null) {
+    return configured;
+  }
+
+  const window = findProvider(config.values.provider)?.capabilities.contextTokens;
+
+  if (window === undefined || window >= configured) {
+    return configured;
+  }
+
+  logger.debug(
+    `context budget reduced to ${String(window)} for ${config.values.provider}`,
+  );
+  return window;
+}
+
+/**
+ * Scan, resolve, and pack, in that order.
+ *
+ * Resolution is the step that makes this more than a ranking function: before
+ * anything is packed, the task is turned into the set of files it demonstrably
+ * requires, and those are packed first and never dropped.
+ */
+export function assembleContext(
   context: CommandContext,
-  request: AiRequest,
-): Promise<AiOutcome> {
+  request: AssemblyRequest,
+): Assembly {
   const workspace = requireWorkspace(context);
   const config = requireConfig(context);
 
@@ -85,15 +165,60 @@ export async function completeWithContext(
   });
   const toolchain = detectToolchain(context.hosts.fs, workspace.root);
 
-  // Recall runs before packing so that what memory contributes is budgeted
-  // alongside the files rather than appended after the fact.
-  const query = [
+  const terms: TermOptions = {
+    ...(request.task === undefined ? {} : { task: request.task }),
+    ...(request.focus === undefined ? {} : { focus: request.focus }),
+  };
+
+  // Indexing reads every file, so it is skipped entirely when the task names
+  // nothing identifier shaped. `orch review` and friends pay nothing for this.
+  const symbols = symbolTerms(terms);
+  const workingSet =
+    symbols.length === 0
+      ? EMPTY_WORKING_SET
+      : resolveWorkingSet({
+          ...terms,
+          index: buildSymbolIndex({
+            root: workspace.root,
+            fs: context.hosts.fs,
+            files: scan.files,
+          }),
+        });
+
+  const focus = rankingTerms(terms);
+
+  const packed = packContext({
+    root: workspace.root,
+    fs: context.hosts.fs,
+    scan,
+    toolchain,
+    budget: resolveBudget(config, context.logger),
+    focus,
+    required: workingSet.required,
+    recent: recentlyChanged(context.hosts.proc, workspace.root),
+    ...(request.notes === undefined ? {} : { notes: request.notes }),
+  });
+
+  return { packed, workingSet, focus, toolchain };
+}
+
+export async function completeWithContext(
+  context: CommandContext,
+  request: AiRequest,
+): Promise<AiOutcome> {
+  const workspace = requireWorkspace(context);
+  const config = requireConfig(context);
+
+  const task = [
     request.variables?.["task"] ?? "",
     request.variables?.["objective"] ?? "",
-    ...(request.focus ?? []),
   ]
     .join(" ")
     .trim();
+
+  // Recall runs before packing so that what memory contributes is budgeted
+  // alongside the files rather than appended after the fact.
+  const query = [task, ...(request.focus ?? [])].join(" ").trim();
 
   const recalled =
     query.length === 0
@@ -104,14 +229,9 @@ export async function completeWithContext(
           { limit: 5, now: context.hosts.clock.now() },
         );
 
-  const packed = packContext({
-    root: workspace.root,
-    fs: context.hosts.fs,
-    scan,
-    toolchain,
-    budget: config.values.contextBudget,
+  const { packed, workingSet, toolchain } = assembleContext(context, {
+    task,
     ...(request.focus === undefined ? {} : { focus: request.focus }),
-    recent: recentlyChanged(context.hosts.proc, workspace.root),
     notes: recalled.map((entry) => ({
       title: `${entry.record.kind}: ${entry.record.title}`,
       body: entry.record.body,
@@ -210,6 +330,7 @@ export async function completeWithContext(
   return {
     result,
     packed,
+    workingSet,
     recalled: recalled.map((entry) => entry.record.id),
     retries,
     fellBack,

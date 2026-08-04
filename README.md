@@ -124,9 +124,9 @@ for handing to someone who has not seen it.
 ```
 src/core/     errors and exit codes, logging, injectable hosts, config, workspace
 src/providers/  one file per provider behind a single interface, plus registry
-src/repo/     scanner, gitignore evaluation, toolchain detection, git state
+src/repo/     scanner, gitignore evaluation, toolchain detection, git state, symbol index
 src/gates/    gate execution against the detected toolchain, result persistence
-src/context/  relevance ranking, token budgeting, context assembly
+src/context/  working set resolution, relevance ranking, token budgeting, assembly
 src/prompts/  versioned .md templates, typed interpolation, registry
 src/proposals/ change parsing, staging, diffing, application. The write path.
 src/workflow/ roadmap parsing, step contract, execution, run log

@@ -37,6 +37,19 @@ describe("scanRepository", () => {
     expect(summary.files.map((file) => file.path)).toEqual(["src/a.ts"]);
   });
 
+  it("always excludes its own state directory", () => {
+    // `.orchestrai` is committed, so no gitignore excludes it, and it holds a
+    // complete copy of every proposed file. Scanned, it would feed staged and
+    // rejected code back to the model as though it were repository source.
+    const summary = scan({
+      "/repo/.orchestrai/proposals/1/files/src/Server.ts": "export class X {}",
+      "/repo/.orchestrai/config.json": "{}",
+      "/repo/src/a.ts": "x",
+    });
+
+    expect(summary.files.map((file) => file.path)).toEqual(["src/a.ts"]);
+  });
+
   it("honours the root gitignore and prunes ignored directories", () => {
     const summary = scan({
       "/repo/.gitignore": "node_modules/\ndist/\n*.log",

@@ -24,6 +24,7 @@ function pack(
     recent?: string[];
     headroom?: number;
     notes?: { title: string; body: string }[];
+    required?: { path: string; reason: string }[];
   } = {},
 ): PackedContext {
   const fs = fakeFileSystem(files);
@@ -38,6 +39,7 @@ function pack(
     ...(options.recent === undefined ? {} : { recent: options.recent }),
     ...(options.headroom === undefined ? {} : { headroom: options.headroom }),
     ...(options.notes === undefined ? {} : { notes: options.notes }),
+    ...(options.required === undefined ? {} : { required: options.required }),
   });
 }
 
@@ -218,6 +220,106 @@ describe("recalled notes", () => {
 
     expect(packed.notes).toBe(0);
     expect(packed.text).not.toContain("# Project memory");
+  });
+});
+
+describe("required files", () => {
+  it("includes a required file the ranker would have dropped", () => {
+    // `deep/leaf.ts` ranks last: no focus hit, no manifest, four levels down.
+    // At this budget only one file survives ranking, and the required set has
+    // to be the one that survives.
+    const packed = pack(
+      {
+        "/repo/README.md": "# ".repeat(400),
+        "/repo/package.json": "{}".repeat(400),
+        "/repo/src/a/b/deep/leaf.ts": "const leaf = 1;",
+      },
+      {
+        budget: 400,
+        required: [{ path: "src/a/b/deep/leaf.ts", reason: "references Leaf" }],
+      },
+    );
+
+    expect(packed.included.map((entry) => entry.path)).toContain(
+      "src/a/b/deep/leaf.ts",
+    );
+    expect(packed.required).toBe(1);
+  });
+
+  it("carries the reason through as the file's justification", () => {
+    const packed = pack(
+      { "/repo/src/panel.ts": "const v = 1;" },
+      { required: [{ path: "src/panel.ts", reason: "references Vehicle" }] },
+    );
+
+    expect(packed.included[0]?.reasons).toEqual(["references Vehicle"]);
+  });
+
+  it("does not include a required file twice", () => {
+    const packed = pack(
+      { "/repo/src/panel.ts": "const v = 1;" },
+      { required: [{ path: "src/panel.ts", reason: "references Vehicle" }] },
+    );
+
+    expect(
+      packed.included.filter((entry) => entry.path === "src/panel.ts"),
+    ).toHaveLength(1);
+  });
+
+  it("places required files ahead of merely well ranked ones", () => {
+    const packed = pack(
+      {
+        "/repo/README.md": "# a project",
+        "/repo/src/deep/panel.ts": "const v = 1;",
+      },
+      { required: [{ path: "src/deep/panel.ts", reason: "references Vehicle" }] },
+    );
+
+    expect(packed.text.indexOf("src/deep/panel.ts")).toBeLessThan(
+      packed.text.indexOf("README.md"),
+    );
+  });
+
+  it("fails rather than silently sampling when the required set does not fit", () => {
+    // The bug this whole path exists to prevent. Dropping half of what a task
+    // demonstrably needs and asking anyway is worse than refusing.
+    expect(() =>
+      pack(
+        { "/repo/src/huge.ts": "const value = 1;\n".repeat(2000) },
+        {
+          budget: 500,
+          required: [{ path: "src/huge.ts", reason: "references Vehicle" }],
+        },
+      ),
+    ).toThrow(/Required context does not fit/);
+  });
+
+  it("gives up memory before it gives up required code", () => {
+    const packed = pack(
+      { "/repo/src/panel.ts": "const v = 1;\n".repeat(60) },
+      {
+        budget: 1200,
+        required: [{ path: "src/panel.ts", reason: "references Vehicle" }],
+        notes: [{ title: "decision: something", body: "x".repeat(2000) }],
+      },
+    );
+
+    expect(packed.required).toBe(1);
+    expect(packed.notes).toBe(0);
+  });
+
+  it("reports a missing required file as dropped rather than throwing", () => {
+    const packed = pack(
+      { "/repo/src/a.ts": "const v = 1;" },
+      { required: [{ path: "src/gone.ts", reason: "references Vehicle" }] },
+    );
+
+    expect(packed.required).toBe(0);
+    expect(packed.dropped).toContainEqual({
+      path: "src/gone.ts",
+      reason: "empty",
+      tokens: 0,
+    });
   });
 });
 

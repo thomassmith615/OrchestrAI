@@ -5,13 +5,26 @@
  * `orch config`: context packing is the highest risk component in the
  * platform, and a packer whose decisions cannot be inspected is a packer
  * nobody can debug. It costs nothing to run and makes no network calls.
+ *
+ * Since Milestone E2 it also shows what the task *resolved* to, which is the
+ * more useful half: `orch context "rename Vehicle to VehicleModel"` answers
+ * "which files would that touch, and would they all fit" before a single token
+ * is spent finding out the hard way.
  */
-import { packContext, recentlyChanged } from "../../context/index.js";
-import { detectToolchain, scanRepository } from "../../repo/index.js";
+import { assembleContext } from "../ai.js";
 import { promptRef, findPrompt, renderPrompt } from "../../prompts/index.js";
-import { requireConfig, requireWorkspace } from "../command.js";
-import type { DroppedFile, IncludedFile } from "../../context/index.js";
-import type { CommandContext, CommandDefinition, CommandResult, ReportField } from "../command.js";
+import { attempt, requireConfig, requireWorkspace } from "../command.js";
+import type {
+  DroppedFile,
+  IncludedFile,
+  RequiredFile,
+} from "../../context/index.js";
+import type {
+  CommandContext,
+  CommandDefinition,
+  CommandResult,
+  ReportField,
+} from "../command.js";
 
 export interface ContextData {
   readonly budget: number;
@@ -20,6 +33,9 @@ export interface ContextData {
   readonly included: readonly IncludedFile[];
   readonly dropped: readonly DroppedFile[];
   readonly focus: readonly string[];
+  /** Task terms that named something the repository declares. */
+  readonly symbols: readonly string[];
+  readonly required: readonly RequiredFile[];
   readonly prompt: string | null;
 }
 
@@ -33,120 +49,145 @@ export const contextCommand: CommandDefinition<ContextData> = {
   args: [
     {
       name: "focus",
-      description: "Terms to prioritize, e.g. a feature or module name",
+      description:
+        "A task, or terms to prioritize, e.g. a feature or module name",
       required: false,
     },
   ],
   options: [
-    { flags: "--show <count>", description: "How many included files to list (default 15)" },
-    { flags: "--dropped", description: "List files dropped for budget reasons" },
+    {
+      flags: "--show <count>",
+      description: "How many included files to list (default 15)",
+    },
+    {
+      flags: "--dropped",
+      description: "List files dropped for budget reasons",
+    },
     { flags: "--print", description: "Print the assembled context itself" },
-    { flags: "--prompt <id>", description: "Render a named prompt around the context" },
+    {
+      flags: "--prompt <id>",
+      description: "Render a named prompt around the context",
+    },
   ],
   requires: { config: true },
 
+  // Wrapped in `attempt` because resolution can refuse: a required set that
+  // does not fit the budget is a precondition failure, and the surface expects
+  // a rejected promise rather than a synchronous throw.
   execute(context: CommandContext): Promise<CommandResult<ContextData>> {
-    const workspace = requireWorkspace(context);
-    const config = requireConfig(context);
+    return attempt(() => {
+      requireWorkspace(context);
+      requireConfig(context);
 
-    const focusArg = context.args[0];
-    const focus =
-      focusArg === undefined || focusArg.length === 0
-        ? []
-        : focusArg.split(/[,\s]+/).filter((term) => term.length > 0);
+      // The argument is read as a task rather than as explicit focus terms: a
+      // bare `orch context vehicle` still works, and a quoted sentence now
+      // resolves the same way `orch propose` would resolve it.
+      const argument = context.args[0];
+      const { packed, workingSet, focus } = assembleContext(context, {
+        ...(argument === undefined || argument.length === 0
+          ? {}
+          : { task: argument }),
+      });
 
-    const scan = scanRepository({
-      root: workspace.root,
-      fs: context.hosts.fs,
-      ignore: config.values.ignore,
-    });
-    const toolchain = detectToolchain(context.hosts.fs, workspace.root);
+      const promptId = context.options["prompt"];
+      const rendered =
+        typeof promptId === "string"
+          ? renderPrompt(promptId, { context: packed.text })
+          : null;
 
-    const packed = packContext({
-      root: workspace.root,
-      fs: context.hosts.fs,
-      scan,
-      toolchain,
-      budget: config.values.contextBudget,
-      focus,
-      recent: recentlyChanged(context.hosts.proc, workspace.root),
-    });
+      const showOption = context.options["show"];
+      const show =
+        typeof showOption === "string" ? Number.parseInt(showOption, 10) : 15;
+      const limit = Number.isNaN(show) ? 15 : show;
 
-    const promptId = context.options["prompt"];
-    const rendered =
-      typeof promptId === "string"
-        ? renderPrompt(promptId, { context: packed.text })
-        : null;
+      const fields: ReportField[] = [
+        { label: "Budget", value: `${String(packed.budget)} tokens` },
+        {
+          label: "Usable",
+          value: `${String(packed.usable)} tokens (25% reserved)`,
+        },
+        {
+          label: "Packed",
+          value: `${String(packed.tokens)} tokens across ${String(packed.included.length)} files`,
+        },
+        {
+          label: "Dropped",
+          value: `${String(countBy(packed.dropped, "budget"))} over budget, ${String(
+            countBy(packed.dropped, "binary"),
+          )} binary, ${String(countBy(packed.dropped, "oversized"))} oversized`,
+        },
+        ...(workingSet.symbols.length === 0
+          ? []
+          : [
+              {
+                label: "Resolved",
+                value: `${workingSet.symbols.join(", ")} in ${String(
+                  packed.required,
+                )} required files`,
+              },
+            ]),
+        ...(focus.length > 0
+          ? [{ label: "Focus", value: focus.join(", ") }]
+          : []),
+        ...(rendered === null
+          ? []
+          : [
+              {
+                label: "Prompt",
+                value: `${promptRef(findPrompt(String(promptId)) ?? { id: String(promptId), version: 0, file: "", description: "" })}, ${String(rendered.length)} chars`,
+              },
+            ]),
+      ];
 
-    const showOption = context.options["show"];
-    const show =
-      typeof showOption === "string" ? Number.parseInt(showOption, 10) : 15;
-    const limit = Number.isNaN(show) ? 15 : show;
+      const notes: string[] = [];
 
-    const fields: ReportField[] = [
-      { label: "Budget", value: `${String(packed.budget)} tokens` },
-      {
-        label: "Usable",
-        value: `${String(packed.usable)} tokens (25% reserved)`,
-      },
-      {
-        label: "Packed",
-        value: `${String(packed.tokens)} tokens across ${String(packed.included.length)} files`,
-      },
-      {
-        label: "Dropped",
-        value: `${String(countBy(packed.dropped, "budget"))} over budget, ${String(
-          countBy(packed.dropped, "binary"),
-        )} binary, ${String(countBy(packed.dropped, "oversized"))} oversized`,
-      },
-      ...(focus.length > 0
-        ? [{ label: "Focus", value: focus.join(", ") }]
-        : []),
-      ...(rendered === null
-        ? []
-        : [
-            {
-              label: "Prompt",
-              value: `${promptRef(findPrompt(String(promptId)) ?? { id: String(promptId), version: 0, file: "", description: "" })}, ${String(rendered.length)} chars`,
-            },
-          ]),
-    ];
-
-    const notes: string[] = [];
-
-    for (const entry of packed.included.slice(0, limit)) {
-      notes.push(
-        `  ${String(entry.tokens).padStart(6)}  ${entry.path}  [${entry.reasons.join("; ")}]`,
-      );
-    }
-    if (packed.included.length > limit) {
-      notes.push(`  ... ${String(packed.included.length - limit)} more included`);
-    }
-
-    if (context.options["dropped"] === true) {
-      notes.push("", "Dropped for budget:");
-      for (const entry of packed.dropped.filter(
-        (item) => item.reason === "budget",
-      )) {
-        notes.push(`  ${String(entry.tokens).padStart(6)}  ${entry.path}`);
+      for (const entry of packed.included.slice(0, limit)) {
+        notes.push(
+          `  ${String(entry.tokens).padStart(6)}  ${entry.path}  [${entry.reasons.join("; ")}]`,
+        );
       }
-    }
+      if (packed.included.length > limit) {
+        notes.push(
+          `  ... ${String(packed.included.length - limit)} more included`,
+        );
+      }
 
-    if (context.options["print"] === true) {
-      notes.push("", rendered ?? packed.text);
-    }
+      if (context.options["dropped"] === true) {
+        notes.push("", "Dropped for budget:");
+        for (const entry of packed.dropped.filter(
+          (item) => item.reason === "budget",
+        )) {
+          notes.push(`  ${String(entry.tokens).padStart(6)}  ${entry.path}`);
+        }
+      }
 
-    return Promise.resolve({
-      data: {
-        budget: packed.budget,
-        usable: packed.usable,
-        tokens: packed.tokens,
-        included: packed.included,
-        dropped: packed.dropped,
-        focus,
-        prompt: rendered,
-      },
-      report: { fields, notes: ["", "Included, highest ranked first:", ...notes] },
+      if (context.options["print"] === true) {
+        notes.push("", rendered ?? packed.text);
+      }
+
+      return {
+        data: {
+          budget: packed.budget,
+          usable: packed.usable,
+          tokens: packed.tokens,
+          included: packed.included,
+          dropped: packed.dropped,
+          focus,
+          symbols: workingSet.symbols,
+          required: workingSet.required,
+          prompt: rendered,
+        },
+        report: {
+          fields,
+          notes: [
+            "",
+            packed.required > 0
+              ? "Required first, then ranked:"
+              : "Included, highest ranked first:",
+            ...notes,
+          ],
+        },
+      };
     });
   },
 };

@@ -181,20 +181,54 @@ esac
 ## Context
 
 ```bash
-orch context                      # what would be sent, and what would not
-orch context auth,login           # prioritize files matching these terms
-orch context --dropped            # list what fell outside the budget
-orch context --print              # print the assembled context itself
-orch context --prompt analyze     # render a named prompt around it
+orch context                                  # what would be sent, and what would not
+orch context "rename Vehicle to VehicleModel" # what that task resolves to
+orch context auth,login                       # prioritize files matching these terms
+orch context --dropped                        # list what fell outside the budget
+orch context --print                          # print the assembled context itself
+orch context --prompt analyze                 # render a named prompt around it
 ```
 
 Nothing here calls a provider. The budget comes from the `contextBudget`
 setting; 25 percent is reserved for the system prompt and the response, so a
-100,000 token budget packs at most 75,000.
+100,000 token budget packs at most 75,000. If `contextBudget` was never
+configured and the provider's default model is in use, the provider's own
+declared context window is used instead when it is smaller.
 
 Every included file lists why it was chosen. Files too large for the remaining
 budget are skipped, never truncated, and appear under `--dropped` with their
 token cost.
+
+### Resolution
+
+The positional argument is read as a task. When it names an identifier the
+repository actually declares, every file referencing that identifier is
+**required**: packed first, labelled with why, and never dropped for budget.
+
+```
+Resolved:  VehicleModel in 3 required files
+
+Required first, then ranked:
+      36  src/vehicle/VehicleModel.ts  [declares VehicleModel]
+      56  src/snapping/SnapEngine.ts   [references VehicleModel]
+      54  src/ui/WeightPanel.ts        [references VehicleModel]
+```
+
+This is what makes a rename possible at all. Ranking scores file *paths*, so it
+finds the declaration and misses every reference site whose path says nothing
+about the symbol — which is the entire job. `orch propose` resolves the same
+way, and reports the same line.
+
+A term only counts as a symbol if it is identifier-shaped (`Vehicle`,
+`MAX_SIZE`, `snap_to`) and actually declared somewhere. A task that names no
+symbol requires nothing and packs by rank, exactly as before. `--focus` on
+`orch propose` overrides the shape rule, which is how to name a lower-case
+identifier that would otherwise look like prose.
+
+When a required set does not fit the budget, the command **fails** with exit
+code 4 rather than sending an incomplete picture. Narrow the task with
+`--focus`, raise `contextBudget`, or use a model with a larger window. See
+ADR 0023.
 
 ## The write path
 

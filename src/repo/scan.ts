@@ -55,8 +55,18 @@ export interface ScanOptions {
   readonly maxFiles?: number;
 }
 
-/** Always excluded, regardless of what .gitignore says. */
-const ALWAYS_IGNORED: ReadonlySet<string> = new Set([".git"]);
+/**
+ * Always excluded, regardless of what .gitignore says.
+ *
+ * `.orchestrai` is here because the state directory is meant to be committed
+ * (only `cache/` is ignored, see `orch init`), and it holds complete copies of
+ * every proposed file under `proposals/<id>/files/`. Left in, the scanner would
+ * feed Orchestraᵢ's own staging area back to the model as though it were
+ * repository source: rejected code indistinguishable from current code,
+ * duplicate near-identical files competing for the same budget, and a context
+ * that degrades a little further with every proposal ever made.
+ */
+const ALWAYS_IGNORED: ReadonlySet<string> = new Set([".git", ".orchestrai"]);
 
 function readScope(
   fs: FileSystemHost,

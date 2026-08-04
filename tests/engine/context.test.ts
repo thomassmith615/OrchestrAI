@@ -98,6 +98,87 @@ describe("contextCommand", () => {
     expect(result.report.notes?.join("\n")).toContain("project manifest");
   });
 
+  it("resolves a task to the files that reference the symbol it names", async () => {
+    // The CamperCAD regression, end to end. Ranking by path scores the
+    // declaration site highest and cannot see the two reference sites at all,
+    // and at this budget only one file survives ranking. Resolution has to put
+    // all three in, or a rename is proposed against an incomplete picture.
+    const result = await contextCommand.execute(
+      context(
+        {
+          "/repo/src/vehicle/VehicleModel.ts": `export class VehicleModel {}\n${"// filler\n".repeat(60)}`,
+          "/repo/src/ui/WeightPanel.ts": `const v: VehicleModel = get();\n${"// filler\n".repeat(60)}`,
+          "/repo/src/snapping/SnapEngine.ts": `function snap(v: VehicleModel) {}\n${"// filler\n".repeat(60)}`,
+          "/repo/README.md": "# CamperCAD\n".repeat(80),
+          "/repo/package.json": `{"name":"campercad"}`,
+        },
+        {},
+        ["rename VehicleModel to Chassis"],
+        { contextBudget: 1400 },
+      ),
+    );
+
+    expect(result.data.symbols).toEqual(["VehicleModel"]);
+    expect(result.data.required.map((entry) => entry.path)).toEqual([
+      "src/vehicle/VehicleModel.ts",
+      "src/snapping/SnapEngine.ts",
+      "src/ui/WeightPanel.ts",
+    ]);
+
+    const included = result.data.included.map((entry) => entry.path);
+    expect(included).toContain("src/ui/WeightPanel.ts");
+    expect(included).toContain("src/snapping/SnapEngine.ts");
+  });
+
+  it("resolves nothing for a task that names no symbol, and packs as it always did", async () => {
+    const result = await contextCommand.execute(
+      context({ "/repo/src/a.ts": "export const a = 1;" }, {}, [
+        "add a health check endpoint",
+      ]),
+    );
+
+    expect(result.data.symbols).toEqual([]);
+    expect(result.data.required).toEqual([]);
+    expect(result.data.included.map((entry) => entry.path)).toContain("src/a.ts");
+  });
+
+  it("refuses rather than sampling when the required set cannot fit", async () => {
+    await expect(
+      contextCommand.execute(
+        context(
+          {
+            "/repo/src/VehicleModel.ts": `export class VehicleModel {}\n${"// filler\n".repeat(500)}`,
+          },
+          {},
+          ["rename VehicleModel to Chassis"],
+          { contextBudget: 400 },
+        ),
+      ),
+    ).rejects.toThrow(/Required context does not fit/);
+  });
+
+  it("reduces the budget to the provider's window when neither was configured", async () => {
+    // `mock` declares 100,000, the same as the default budget, so nothing
+    // changes there. `ollama` declares 8,000, and packing 75,000 tokens for it
+    // would fail at the API boundary instead of here.
+    const result = await contextCommand.execute(
+      context({ "/repo/src/a.ts": "x" }, {}, [], { provider: "ollama" }),
+    );
+
+    expect(result.data.budget).toBe(8000);
+  });
+
+  it("obeys a configured budget even when the provider declares less", async () => {
+    const result = await contextCommand.execute(
+      context({ "/repo/src/a.ts": "x" }, {}, [], {
+        provider: "ollama",
+        contextBudget: 32_000,
+      }),
+    );
+
+    expect(result.data.budget).toBe(32_000);
+  });
+
   it("requires a repository and valid configuration", () => {
     expect(contextCommand.requires).toEqual({ config: true });
   });

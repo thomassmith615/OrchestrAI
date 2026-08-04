@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "proposal": {
+    "id": "26080400125",
+    "task": "rename VehicleModel to Chassis",
+    "status": "open",
+    "createdAt": 1785802378418,
+    "changes": [],
+    "notes": "No change blocks. This rename cannot be done safely, and I don't think it should be done at all.\n\n`VehicleModel` is not a symbol in this repository. Every occurrence is one of two things:\n\n1. **Test fixture content** — string literals inside `tests/context/resolve.test.ts`, `tests/engine/context.test.ts`, and `tests/repo/symbol-index.test.ts` describing a *synthetic* repository (`/repo/src/vehicle/VehicleModel.ts`, `\"export class VehicleModel {}\"`). No such file exists under `src/`.\n2. **Historical record** — `docs/adr/0023-working-set-resolution.md`, `docs/REVIEW-0001-context-resolution.md`, `docs/CLI.md`, and `CHANGELOG.md`, all describing the CamperCAD session that motivated the working-set resolver. ADR 0023 is Accepted and REVIEW-0001 states explicitly that it is \"kept as written… a review edited to look prescient is worth nothing.\" Rewriting the identifier in those documents would falsify the record they exist to preserve.\n\nRenaming the fixtures would also be a net loss: the `VehicleModel`/`Chassis` pairing in `resolve.test.ts` is load-bearing. `Chassis` is deliberately the *new* name in the rename, used to assert that a term the repository does not declare resolves to nothing:\n\n```ts\nit(\"ignores a term the repository does not declare\", () => {\n  const working = resolve(CAMPER, { task: \"rename Vehicle to Chassis\" });\n  expect(working.symbols).toEqual([]);\n```\n\nRenaming `VehicleModel` → `Chassis` collapses the declared symbol and the undeclared one into the same token and destroys that test's meaning.\n\nOne thing worth flagging, since it is a real finding about this repository rather than about the task: `extractSymbols` does not strip string literals (documented as deliberate in `src/repo/symbols.ts`, per ADR 0023). So `orch context \"rename VehicleModel to Chassis\"` run against *this* repo will report `Resolved: VehicleModel in 3 required files` and pull in those three test files — the over-inclusion the ADR accepted as the safe error direction, showing up in practice.\n\nIf the intent was to run this rename against a different repository (CamperCAD), point `orch` at that repository. If the intent was to change the fixture vocabulary here, say so explicitly and I'll rename the fixtures while leaving `docs/adr/0023`, `docs/REVIEW-0001`, and `CHANGELOG.md` untouched — but I'd advise against it, since those fixtures are named to match the documented regression.",
+    "provider": "anthropic",
+    "model": "claude-opus-5",
+    "promptRef": "propose@1",
+    "contextTokens": 74996,
+    "usage": {
+      "inputTokens": 98345,
+      "outputTokens": 1651
+    }
+  }
+}

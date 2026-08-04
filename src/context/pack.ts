@@ -9,6 +9,7 @@
 import { join } from "node:path";
 import { estimateTokens } from "./tokens.js";
 import { rankFiles } from "./rank.js";
+import { PreconditionError } from "../core/errors.js";
 import type { TokenEstimator } from "./tokens.js";
 import type { RankOptions } from "./rank.js";
 import type { FileSystemHost, ProcessHost } from "../core/hosts.js";
@@ -43,6 +44,17 @@ export interface ContextNote {
   readonly body: string;
 }
 
+/**
+ * A file the task cannot be done correctly without, and why. Produced by
+ * `resolveWorkingSet`; consumed here as plain data so the packer never needs to
+ * know how a working set was arrived at.
+ */
+export interface RequiredFile {
+  readonly path: string;
+  /** Human readable justification, e.g. `references Vehicle`. */
+  readonly reason: string;
+}
+
 export interface PackedContext {
   /** The assembled text, ready to interpolate into a prompt. */
   readonly text: string;
@@ -55,6 +67,8 @@ export interface PackedContext {
   /** Tokens spent on recalled knowledge rather than on files. */
   readonly noteTokens: number;
   readonly notes: number;
+  /** How many of `included` were required rather than merely well ranked. */
+  readonly required: number;
 }
 
 export interface PackOptions {
@@ -65,6 +79,11 @@ export interface PackOptions {
   readonly budget: number;
   readonly focus?: readonly string[];
   readonly recent?: readonly string[];
+  /**
+   * Files that must be included. Packed before anything competes for the
+   * budget, and a failure rather than a drop when they do not fit.
+   */
+  readonly required?: readonly RequiredFile[];
   /** Recalled knowledge, budgeted before files because it is denser. */
   readonly notes?: readonly ContextNote[];
   readonly estimate?: TokenEstimator;
@@ -124,14 +143,70 @@ export function packContext(options: PackOptions): PackedContext {
     }
   }
 
-  const sections: string[] = [header(options.scan, options.toolchain)];
-  let tokens = estimate(sections[0] ?? "");
+  const read = (path: string): string | null => {
+    let content: string;
+    try {
+      content = options.fs.readFile(join(options.root, path));
+    } catch {
+      return null;
+    }
+    return content.trim().length === 0 ? null : content;
+  };
 
-  // Recalled knowledge goes in before files: it is denser than source, and it
-  // is the part a fresh conversation cannot reconstruct. It is capped at a
-  // third of the window, because a context that is all history explains
-  // nothing about the code.
+  const headerSection = header(options.scan, options.toolchain);
+  let tokens = estimate(headerSection);
+
+  // Required files are measured before anything else competes for the budget.
+  // Their cost decides how much room is left for memory and for ranking, rather
+  // than being whatever happens to survive it.
+  const requiredSections: string[] = [];
+  const requiredPaths = new Set<string>();
+  let requiredTokens = 0;
+
+  for (const entry of options.required ?? []) {
+    if (requiredPaths.has(entry.path)) {
+      continue;
+    }
+
+    const content = read(entry.path);
+
+    if (content === null) {
+      dropped.push({ path: entry.path, reason: "empty", tokens: 0 });
+      continue;
+    }
+
+    const section = fence(entry.path, content);
+    const cost = estimate(section);
+
+    requiredPaths.add(entry.path);
+    requiredSections.push(section);
+    requiredTokens += cost;
+    included.push({
+      path: entry.path,
+      tokens: cost,
+      score: Number.POSITIVE_INFINITY,
+      reasons: [entry.reason],
+    });
+  }
+
+  // The whole point of a required set is that silently sampling it is the bug.
+  // A task that cannot be shown what it needs must say so, not guess.
+  if (tokens + requiredTokens > usable) {
+    throw new PreconditionError(
+      `Required context does not fit: ${String(requiredPaths.size)} files need ` +
+        `${String(requiredTokens)} tokens, ${String(usable)} available`,
+      "Narrow the task with --focus, raise contextBudget, or use a model with a larger context window",
+    );
+  }
+
+  tokens += requiredTokens;
+
+  // Recalled knowledge goes in before ranked files: it is denser than source,
+  // and it is the part a fresh conversation cannot reconstruct. It is capped at
+  // a third of what is left after the required set, because a context that is
+  // all history explains nothing about the code.
   const notes = options.notes ?? [];
+  const sections: string[] = [headerSection];
   let noteTokens = 0;
   let noteCount = 0;
 
@@ -145,7 +220,7 @@ export function packContext(options: PackOptions): PackedContext {
 
     const cost = estimate(rendered);
 
-    if (cost <= usable / 3) {
+    if (cost <= (usable - requiredTokens) / 3) {
       sections.push(rendered);
       tokens += cost;
       noteTokens = cost;
@@ -153,16 +228,16 @@ export function packContext(options: PackOptions): PackedContext {
     }
   }
 
+  sections.push(...requiredSections);
+
   for (const ranked of rankFiles(options.scan.files, rankOptions)) {
-    let content: string;
-    try {
-      content = options.fs.readFile(join(options.root, ranked.file.path));
-    } catch {
-      dropped.push({ path: ranked.file.path, reason: "empty", tokens: 0 });
+    if (requiredPaths.has(ranked.file.path)) {
       continue;
     }
 
-    if (content.trim().length === 0) {
+    const content = read(ranked.file.path);
+
+    if (content === null) {
       dropped.push({ path: ranked.file.path, reason: "empty", tokens: 0 });
       continue;
     }
@@ -198,6 +273,7 @@ export function packContext(options: PackOptions): PackedContext {
     dropped,
     noteTokens,
     notes: noteCount,
+    required: requiredPaths.size,
   };
 }
 
